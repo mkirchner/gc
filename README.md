@@ -11,7 +11,7 @@ Zero-dependency garbage collection for C.
 
 ### Use
 
-```
+```c
 ...
 #include "gc.h"
 ...
