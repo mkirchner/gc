@@ -3,7 +3,22 @@ Zero-dependency garbage collection for C.
 
 ## Table of contents
 
-...
+* [Table of contents](#table-of-contents)
+* [Introduction](#introduction)
+   * [Acknowledgements](#acknowledgements)
+* [Documentation](#documentation)
+* [Quickstart](#quickstart)
+   * [Download and test](#download-and-test)
+   * [Basic usage](#basic-usage)
+* [API](#api)
+* [Basic Concepts](#basic-concepts)
+* [Hashmap implementation and private API](#hashmap-implementation-and-private-api)
+   * [Unused memory: the reachability definition](#unused-memory-the-reachability-definition)
+   * [Mark-and-sweep: basic algo](#mark-and-sweep-basic-algo)
+   * [Hash map implementation](#hash-map-implementation)
+   * [Finding roots](#finding-roots)
+   * [Dumping registers on the stack](#dumping-registers-on-the-stack)
+   * [Depth-first recursive marking](#depth-first-recursive-marking)
 
 ## Introduction
 
@@ -63,7 +78,7 @@ void some_fun() {
         my_array[i] = 42;
     }
     ...
-    // no free/delete!
+    // look ma, no free!
 }
 
 int main(int argc, char* argv[]) {
