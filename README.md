@@ -156,8 +156,8 @@ It is possible to trigger explicit memory deallocation using
 void gc_free(GarbageCollector* gc, void* ptr);
 ```
 
-Calling `gc_free()` is guaranteed to (a) call the destructor on the object
-pointed to by `ptr` and (b) to free the memory that `ptr` points to
+Calling `gc_free()` is guaranteed to (a) finalize/destruct on the object
+pointed to by `ptr` if applicable and (b) to free the memory that `ptr` points to
 irrespective of the current scheduling for garbage collection and will also
 work if GC has been paused using `gc_pause()` above.
 
@@ -250,7 +250,7 @@ determine if the deallocation requires a destructor call, call if required,
 free the managed memory and delete the metadata entry from the hash map.
 
 
-# Garbage collection
+### Garbage collection
 
 The above data structures and the associated interfaces given us
 the ability to manage the metadata required to build a garbage collector.
@@ -274,16 +274,82 @@ deallocates all unused (i.e. unmarked) allocations, returns to `gc_run()` and
 the world continues to run.
 
 
-### Unused memory and reachability
+### Reachability
 
-### Depth-first recursive marking
+`gc` will keep memory allocations that are *reachable* and collect everything
+else. An allocation is considered reachable if any of the following is true:
+
+1. There is a pointer on the stack that points to the allocation content.
+   The pointer must reside in a stack frame that is at least as deep in the call
+   stack as the bottom-of-stack variable passed to `gc_start()` (i.e. `bos` is
+   the smallest stack address considered during the mark phase).
+2. There is a pointer inside `gc_*alloc()`-allocated content that points to the
+   allocation content.
+3. The allocation is tagged with GC_TAG_ROOT.
+
+
+### The Mark-and-Sweep Algorithm
+
+The naïve mark-and-sweep algorithm runs in two stages. First, in a *mark*
+stage, the algorithm detects all *roots* and from there marks all reachable
+allocations. Second, in the *sweep* stage, the algorithm iterates over all
+known allocations and deletes the unmarked (i.e. unreachable) allocations.
 
 ### Finding roots
 
+`gc` attempts to detect roots in the stack (starting from the bottom-of-stack
+pointer `bos` that is passed to `gc_start()`) and the registers (by [dumping them
+on the stack](#dumping-registers-on-the-stack) prior to the mark phase). It
+also supports heap-allocated objects that have the `GC_TAG_ROOT` tag set.
+
+Marking an allocation consists of (1) setting the `tag` field in an `Allocation`
+object to `GC_TAG_MARK` and (2) scanning the allocated memory for pointers to
+known allocations, recursively repeating the process.
+
+### Depth-first recursive marking
+
+Marking allocations is implemented as a simple, recursive depth-first search with `char` size
+increments (since there is no guarantee for any stack alignment):
+
+```c
+void gc_mark_alloc(GarbageCollector* gc, void* ptr)
+{
+    Allocation* alloc = gc_allocation_map_get(gc->allocs, ptr);
+    if (alloc && !(alloc->tag & GC_TAG_MARK)) {
+        alloc->tag |= GC_TAG_MARK;
+        for (char* p = (char*) alloc->ptr;
+             p < (char*) alloc->ptr + alloc->size;
+             ++p) {
+            gc_mark_alloc(gc, *(void**)p);
+        }
+    }
+}
+```
+
+In `gc.c`, `gc_mark()` starts the marking process by marking the
+known roots on the stack via a call to `gc_mark_roots()`. To mark the roots we
+do one full pass through all known allocations. We then proceed to dump the
+registers on the stack.
+
+
 ### Dumping registers on the stack
 
+Dumping registers on the stack is implemented using `setjmp()`, which stores
+them in a `jmp_buf` variable right before we mark the stack. The detour using
+the `volatile` function pointer `_mark_stack` to the `gc_mark_stack()` function
+is necessary to avoid the inlining of the call to `gc_mark_stack()`.
+
+```c
+/* Dump registers onto stack and scan the stack */
+void (*volatile _mark_stack)(GarbageCollector*) = gc_mark_stack;
+jmp_buf ctx;
+memset(&ctx, 0, sizeof(jmp_buf));
+setjmp(ctx);
+_mark_stack(gc);
+```
 
 
+[naive_mas]: https://en.wikipedia.org/wiki/Tracing_garbage_collection#Naïve_mark-and-sweep
 [boehm]: https://www.hboehm.info/gc/ 
 [stutter]: https://github.com/mkirchner/stutter
 [tgc]: https://github.com/orangeduck/tgc
