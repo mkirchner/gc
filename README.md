@@ -49,9 +49,10 @@ Handbook][garbage_collection_handbook].
 * The [concepts](#concepts) section describes the basic concepts and design
   decisions that went into the implementation of `gc`.
 * Interleaved with the concepts, there are implementation sections that detail
-  the implementation of the core components, see [hash map implementation](),
-  [dumping regsiters on the stack](), [finding roots](), and [depth-first,
-  recursive marking]().
+  the implementation of the core components, see [hash map
+  implementation](#data-structures), [dumping regsiters on the
+  stack](#dumping-registers-on-the-stack), [finding roots](#finding-roots), and
+  [depth-first, recursive marking](#depth-first-recursive-marking).
 
 
 ## Quickstart
