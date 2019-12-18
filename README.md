@@ -187,6 +187,8 @@ memory management and garbage collection metadata separate. This makes `gc`
 much simpler to understand but, of course, also less space- and time-efficient
 than more optimized approaches.
 
+### Data Structures
+
 The core data structure inside `gc` is a hash map that maps the address of
 allocated memory to the garbage collection metadata of that memory:
 
@@ -247,28 +249,39 @@ For `gc_free()`, use the pointer to locate the metadata in the hash map,
 determine if the deallocation requires a destructor call, call if required,
 free the managed memory and delete the metadata entry from the hash map.
 
-In summary, the above data structures and the associated interfaces given us
+
+# Garbage collection
+
+The above data structures and the associated interfaces given us
 the ability to manage the metadata required to build a garbage collector.
 
+`gc` triggers collection under two circumstances: (a) when any of the calls to
+the system allocation fail (in the hope to deallocate sufficient memory to
+fulfill the current request); and (b) when the number of entries in the hash
+map passes a dynamically adjusted high water mark.
+
+If either of these cases occurs, `gc` stops the world and starts a
+mark-and-sweep garbage collection run over all current allocations. This
+functionality is implemented in the `gc_run()` function which is part of the
+public API and delegates all work to the `gc_mark()` and `gc_sweep()` functions
+that are part of the private API.
+
+`gc_mark()` has the task of [finding roots](#finding-roots) and tagging all
+known allocations that are referenced from a root (or from an allocation that
+is referenced from a root, i.e. transitively) as "used". Once the marking of
+is completed, `gc_sweep()` iterates over all known allocations and
+deallocates all unused (i.e. unmarked) allocations, returns to `gc_run()` and
+the world continues to run.
 
 
+### Unused memory and reachability
 
-## Hashmap implementation and private API
-
-* separate chaining
-* auto-resize
-
-### Unused memory: the reachability definition
-
-### Mark-and-sweep: basic algo
-
-### Hash map implementation
+### Depth-first recursive marking
 
 ### Finding roots
 
 ### Dumping registers on the stack
 
-### Depth-first recursive marking
 
 
 [boehm]: https://www.hboehm.info/gc/ 
