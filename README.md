@@ -177,7 +177,7 @@ char* gc_strdup (GarbageCollector* gc, const char* s);
 The fundamental idea behind garbage collection is to automate the memory
 allocation/deallocation cycle. This is accomplished by keeping track of all
 allocated memory and periodically triggering deallocation for memory that is
-still allocated but [unused](#unused-memory).
+still allocated but [unreachable](#reachability).
 
 Many advanced garbage collectors also implement their own approach to memory
 allocation (i.e. replace `malloc()`). This often enables them to layout memory
