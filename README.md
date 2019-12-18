@@ -1,4 +1,4 @@
-# gc - zero-dependency garbage collection for C
+# gc: zero-dependency garbage collection for C
 
 `gc` is an implementation of a conservative, thread-local, mark-and-sweep
 garbage collector. The implementation provides a fully functional replacement
@@ -173,11 +173,84 @@ char* gc_strdup (GarbageCollector* gc, const char* s);
 
 ## Basic Concepts
 
+The fundamental idea behind garbage collection is to automate the memory
+allocation/deallocation cycle. This is accomplished by keeping track of all
+allocated memory and periodically triggering deallocation for memory that is
+still allocated but [unused](#unused-memory).
 
-* Scope is to *manage* memory allocation and deallocation, not to replace the
-  allocation implementation, i.e. no re-implementation of malloc & friends
-* This is accomplished by keeping track of memory allocation and periodically triggering
-  deallocation for memory that is still allocated but unused.
+Many advanced garbage collectors also implement their own approach to memory
+allocation (i.e. replace `malloc()`). This often enables them to layout memory
+in a more space-efficient manner or for faster access but comes at the price of
+architecture-specific implementations and increased complexity. `gc` sidesteps
+these issues by falling back on the POSIX `malloc()` implementation and keeping
+memory management and garbage collection metadata separate. This makes `gc`
+much simpler to understand but, of course, also less space- and time-efficient
+than more optimized approaches.
+
+The core data structure inside `gc` is a hash map that maps the address of
+allocated memory to the garbage collection metadata of that memory:
+
+The items in the hash map are allocations, modeles with the `Allocation`
+`struct`:
+
+```c
+typedef struct Allocation {
+    void* ptr;                // mem pointer
+    size_t size;              // allocated size in bytes
+    char tag;                 // the tag for mark-and-sweep
+    void (*dtor)(void*);      // destructor
+    struct Allocation* next;  // separate chaining
+} Allocation;
+```
+
+Each `Allocation` instance holds a pointer to the allocated memory, the size of
+the allocated memory at that location, a tag for mark-and-sweep (see below), an
+optional pointer to the destructor function and a pointer to the next
+`Allocation` instance (for separate chaining, see below).
+
+The allocations are collected in an `AllocationMap` 
+
+```c
+typedef struct AllocationMap {
+    size_t capacity;
+    size_t min_capacity;
+    double downsize_factor;
+    double upsize_factor;
+    double sweep_factor;
+    size_t sweep_limit;
+    size_t size;
+    Allocation** allocs;
+} AllocationMap;
+```
+
+that, together with a set of `static` functions inside `gc.c`, provides hash
+map semantics for the implementation of the public API.
+
+The `AllocationMap` is the central data structure in the `GarbageCollector`
+struct which is part of the public API:
+
+```c
+typedef struct GarbageCollector {
+    struct AllocationMap* allocs;
+    bool paused;
+    void *bos;
+    size_t min_size;
+} GarbageCollector;
+```
+
+With the basic data structures in place, any `gc_*alloc()` memory allocation
+request is a two-step procedure: first, allocate the memory through system (i.e.
+standard `malloc()`) functionality and second, add or update the associated
+metadata to the hash map.
+
+For `gc_free()`, use the pointer to locate the metadata in the hash map,
+determine if the deallocation requires a destructor call, call if required,
+free the managed memory and delete the metadata entry from the hash map.
+
+In summary, the above data structures and the associated interfaces given us
+the ability to manage the metadata required to build a garbage collector.
+
+
 
 
 ## Hashmap implementation and private API
