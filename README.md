@@ -91,7 +91,86 @@ int main(int argc, char* argv[]) {
 }
 ```
 
-## API
+## Core API
+
+This describes the core API, see `gc.h` for more details and the low-level API.
+
+### Starting, stopping, pausing, resuming and running GC
+
+In order to initialize and start garbage collection, use the `gc_start()`
+function and pass a *bottom-of-stack* address:
+
+```c
+void gc_start(GarbageCollector* gc, void* bos);
+```
+
+The bottom-of-stack parameter `bos` needs to point to a stack-allocated
+variable and marks the low end of the stack from where [root
+finding](#root-finding) (scanning) starts. 
+
+Garbage collection can be stopped, paused and resumed with
+
+```c
+void gc_stop(GarbageCollector* gc);
+void gc_pause(GarbageCollector* gc);
+void gc_resume(GarbageCollector* gc);
+```
+
+and manual garbage collection can be triggered with
+
+```c
+size_t gc_run(GarbageCollector* gc);
+```
+
+### Memory allocation and deallocation
+
+`gc` supports `malloc()`, `calloc()`and `realloc()`-style memory allocation.
+The respective funtion signatures mimick the POSIX functions (with the
+exception that we need to pass the garbage collector along as the first
+argument):
+
+```c
+void* gc_malloc(GarbageCollector* gc, size_t size);
+void* gc_calloc(GarbageCollector* gc, size_t count, size_t size);
+void* gc_realloc(GarbageCollector* gc, void* ptr, size_t size);
+```
+
+It is possible to pass a pointer to a desctructor function through the
+extended interface:
+
+```c
+void* dtor(void* obj) {
+   // do some cleanup work
+   obj->parent->deregister();
+   obj->db->disconnect()
+   ...
+   // no need to free obj
+}
+...
+SomeObject* obj = gc_malloc_ext(gc, sizeof(SomeObject), dtor);
+...
+``` 
+
+It is possible to trigger explicit memory deallocation using 
+
+```c
+void gc_free(GarbageCollector* gc, void* ptr);
+```
+
+Calling `gc_free()` is guaranteed to (a) call the destructor on the object
+pointed to by `ptr` and (b) to free the memory that `ptr` points to
+irrespective of the current scheduling for garbage collection and will also
+work if GC has been paused using `gc_pause()` above.
+
+### Helper functions
+
+`gc` also offers a `strdup()` implementation that returns a garbage-collected
+copy:
+
+```c
+char* gc_strdup (GarbageCollector* gc, const char* s);
+```
+
 
 ## Basic Concepts
 
