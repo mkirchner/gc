@@ -1,7 +1,4 @@
-# gc
-Zero-dependency garbage collection for C.
-
-## Introduction
+# gc - zero-dependency garbage collection for C
 
 `gc` is an implementation of a conservative, thread-local, mark-and-sweep
 garbage collector. The implementation provides a fully functional replacement
@@ -27,9 +24,7 @@ Handbook][garbage_collection_handbook].
 
 ## Table of contents
 
-* [Introduction](#introduction)
-  * [Acknowledgements](#acknowledgements)
-* [Documentation](#documentation)
+* [Documentation Overview](#documentation-overview)
 * [Quickstart](#quickstart)
   * [Download and test](#download-and-test)
   * [Basic usage](#basic-usage)
@@ -48,7 +43,7 @@ Handbook][garbage_collection_handbook].
 
 
 
-## Documentation
+## Documentation Overview
 
 * Read the [quickstart](#quickstart) below to see how to get started quickly
 * The [concepts](#concepts) section describes the basic concepts and design
