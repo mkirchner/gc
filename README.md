@@ -5,23 +5,23 @@ Zero-dependency garbage collection for C.
 
 * [Table of contents](#table-of-contents)
 * [Introduction](#introduction)
- * [Acknowledgements](#acknowledgements)
+  * [Acknowledgements](#acknowledgements)
 * [Documentation](#documentation)
 * [Quickstart](#quickstart)
- * [Download and test](#download-and-test)
- * [Basic usage](#basic-usage)
+  * [Download and test](#download-and-test)
+  * [Basic usage](#basic-usage)
 * [Core API](#core-api)
- * [Starting, stopping, pausing, resuming and running GC](#starting-stopping-pausing-resuming-and-running-gc)
- * [Memory allocation and deallocation](#memory-allocation-and-deallocation)
- * [Helper functions](#helper-functions)
+  * [Starting, stopping, pausing, resuming and running GC](#starting-stopping-pausing-resuming-and-running-gc)
+  * [Memory allocation and deallocation](#memory-allocation-and-deallocation)
+  * [Helper functions](#helper-functions)
 * [Basic Concepts](#basic-concepts)
-* [Hashmap implementation and private API](#hashmap-implementation-and-private-api)
- * [Unused memory: the reachability definition](#unused-memory-the-reachability-definition)
- * [Mark-and-sweep: basic algo](#mark-and-sweep-basic-algo)
- * [Hash map implementation](#hash-map-implementation)
- * [Finding roots](#finding-roots)
- * [Dumping registers on the stack](#dumping-registers-on-the-stack)
- * [Depth-first recursive marking](#depth-first-recursive-marking)
+  * [Hashmap implementation and private API](#hashmap-implementation-and-private-api)
+  * [Unused memory: the reachability definition](#unused-memory-the-reachability-definition)
+  * [Mark-and-sweep: basic algo](#mark-and-sweep-basic-algo)
+  * [Hash map implementation](#hash-map-implementation)
+  * [Finding roots](#finding-roots)
+  * [Dumping registers on the stack](#dumping-registers-on-the-stack)
+  * [Depth-first recursive marking](#depth-first-recursive-marking)
 
 ## Introduction
 
@@ -50,7 +50,7 @@ Handbook][garbage_collection_handbook].
 ## Documentation
 
 * Read the [quickstart](#quickstart) below to see how to get started quickly
-* The [concepts](#concepts) chapter describes the basic concepts and design
+* The [concepts](#concepts) section describes the basic concepts and design
   decisions that went into the implementation of `gc`.
 * Interleaved with the concepts, there are implementation sections that detail
   the implementation of the core components, see [hash map implementation](),
