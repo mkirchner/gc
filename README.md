@@ -62,6 +62,7 @@ Handbook][garbage_collection_handbook].
     $ git clone git@github.com:mkirchner/gc.git
     $ cd gc
     $ make test
+    $ make coverage  # to open the current coverage in a browser
 
 ### Basic usage
 
@@ -151,7 +152,22 @@ SomeObject* obj = gc_malloc_ext(gc, sizeof(SomeObject), dtor);
 ...
 ``` 
 
-It is possible to trigger explicit memory deallocation using 
+`gc` supports static allocations that are garbage collected only when the
+GC shuts down via `gc_stop()`. Just use the appropriate helper function:
+
+```c
+void* gc_malloc_static(GarbageCollector* gc, size_t size, void (*dtor)(void*));
+```
+
+Static allocation expects a pointer to a finalization function; just set to
+`NULL` if finalization is not required.
+
+Note that `gc` currently does not guarantee a specific ordering when it
+collects static variables, If static vars need to be deallocated in a
+particular order, the user should call `gc_free()` on them in the desired
+sequence prior to calling `gc_stop()`, see below.
+
+It is also possible to trigger explicit memory deallocation using 
 
 ```c
 void gc_free(GarbageCollector* gc, void* ptr);
@@ -161,6 +177,10 @@ Calling `gc_free()` is guaranteed to (a) finalize/destruct on the object
 pointed to by `ptr` if applicable and (b) to free the memory that `ptr` points to
 irrespective of the current scheduling for garbage collection and will also
 work if GC has been paused using `gc_pause()` above.
+
+
+### Static variables
+
 
 ### Helper functions
 
