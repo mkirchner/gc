@@ -1,4 +1,4 @@
-# gc: zero-dependency garbage collection for C
+# gc: mark & sweep garbage collection for C
 
 `gc` is an implementation of a conservative, thread-local, mark-and-sweep
 garbage collector. The implementation provides a fully functional replacement
@@ -183,7 +183,7 @@ Many advanced garbage collectors also implement their own approach to memory
 allocation (i.e. replace `malloc()`). This often enables them to layout memory
 in a more space-efficient manner or for faster access but comes at the price of
 architecture-specific implementations and increased complexity. `gc` sidesteps
-these issues by falling back on the POSIX `malloc()` implementation and keeping
+these issues by falling back on the POSIX `*alloc()` implementations and keeping
 memory management and garbage collection metadata separate. This makes `gc`
 much simpler to understand but, of course, also less space- and time-efficient
 than more optimized approaches.
@@ -250,11 +250,11 @@ For `gc_free()`, use the pointer to locate the metadata in the hash map,
 determine if the deallocation requires a destructor call, call if required,
 free the managed memory and delete the metadata entry from the hash map.
 
+These data structures and the associated interfaces enable the
+management of the metadata required to build a garbage collector.
+
 
 ### Garbage collection
-
-The above data structures and the associated interfaces given us
-the ability to manage the metadata required to build a garbage collector.
 
 `gc` triggers collection under two circumstances: (a) when any of the calls to
 the system allocation fail (in the hope to deallocate sufficient memory to
@@ -286,31 +286,37 @@ else. An allocation is considered reachable if any of the following is true:
    the smallest stack address considered during the mark phase).
 2. There is a pointer inside `gc_*alloc()`-allocated content that points to the
    allocation content.
-3. The allocation is tagged with GC_TAG_ROOT.
+3. The allocation is tagged with `GC_TAG_ROOT`.
 
 
 ### The Mark-and-Sweep Algorithm
 
 The naïve mark-and-sweep algorithm runs in two stages. First, in a *mark*
-stage, the algorithm detects all *roots* and from there marks all reachable
-allocations. Second, in the *sweep* stage, the algorithm iterates over all
-known allocations and deletes the unmarked (i.e. unreachable) allocations.
+stage, the algorithm finds and marks all *root* allocations and all allocations
+that are reachable from the roots.  Second, in the *sweep* stage, the algorithm
+passes over all known allocations, collecting all allocations that were not
+marked and are therefore deemed unreachable.
 
 ### Finding roots
 
-`gc` attempts to detect roots in the stack (starting from the bottom-of-stack
-pointer `bos` that is passed to `gc_start()`) and the registers (by [dumping them
-on the stack](#dumping-registers-on-the-stack) prior to the mark phase). It
-also supports heap-allocated objects that have the `GC_TAG_ROOT` tag set.
+At the beginning of the *mark* stage, we first sweep across all known
+allocations and find explicit roots with the `GC_TAG_ROOT` tag set.
+Each of these roots is a starting point for [depth-first recursive
+marking](#depth-first-recursive-marking).
 
-Marking an allocation consists of (1) setting the `tag` field in an `Allocation`
-object to `GC_TAG_MARK` and (2) scanning the allocated memory for pointers to
-known allocations, recursively repeating the process.
+`gc` subsequently detects all roots in the stack (starting from the bottom-of-stack
+pointer `bos` that is passed to `gc_start()`) and the registers (by [dumping them
+on the stack](#dumping-registers-on-the-stack) prior to the mark phase) and
+uses these as starting points for marking as well.
 
 ### Depth-first recursive marking
 
-Marking allocations is implemented as a simple, recursive depth-first search with `char` size
-increments (since there is no guarantee for any stack alignment):
+Given a root allocation, marking consists of (1) setting the `tag` field in an
+`Allocation` object to `GC_TAG_MARK` and (2) scanning the allocated memory for
+pointers to known allocations, recursively repeating the process.
+
+The underlying implementation is a simple, recursive depth-first search that
+scans over all memory content to find potential references:
 
 ```c
 void gc_mark_alloc(GarbageCollector* gc, void* ptr)
@@ -335,19 +341,25 @@ registers on the stack.
 
 ### Dumping registers on the stack
 
-Dumping registers on the stack is implemented using `setjmp()`, which stores
-them in a `jmp_buf` variable right before we mark the stack. The detour using
-the `volatile` function pointer `_mark_stack` to the `gc_mark_stack()` function
-is necessary to avoid the inlining of the call to `gc_mark_stack()`.
+In order to make the CPU register contents available for root finding, `gc`
+dumps them on the stack. This is implemented in a somewhat portable way using
+`setjmp()`, which stores them in a `jmp_buf` variable right before we mark the
+stack:
 
 ```c
+...
 /* Dump registers onto stack and scan the stack */
 void (*volatile _mark_stack)(GarbageCollector*) = gc_mark_stack;
 jmp_buf ctx;
 memset(&ctx, 0, sizeof(jmp_buf));
 setjmp(ctx);
 _mark_stack(gc);
+...
 ```
+
+The detour using the `volatile` function pointer `_mark_stack` to the
+`gc_mark_stack()` function is necessary to avoid the inlining of the call to
+`gc_mark_stack()`.
 
 
 [naive_mas]: https://en.wikipedia.org/wiki/Tracing_garbage_collection#Naïve_mark-and-sweep
