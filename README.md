@@ -179,9 +179,6 @@ irrespective of the current scheduling for garbage collection and will also
 work if GC has been paused using `gc_pause()` above.
 
 
-### Static variables
-
-
 ### Helper functions
 
 `gc` also offers a `strdup()` implementation that returns a garbage-collected
@@ -380,6 +377,47 @@ _mark_stack(gc);
 The detour using the `volatile` function pointer `_mark_stack` to the
 `gc_mark_stack()` function is necessary to avoid the inlining of the call to
 `gc_mark_stack()`.
+
+
+### Sweeping
+
+After marking all memory that is reachable and therefore potentially still in
+use, collecting the unreachable allocations is trivial. Here is the
+implementation from `gc_sweep()`:
+
+```c
+size_t gc_sweep(GarbageCollector* gc)
+{
+    size_t total = 0;
+    for (size_t i = 0; i < gc->allocs->capacity; ++i) {
+        Allocation* chunk = gc->allocs->allocs[i];
+        while (chunk) {
+            if (chunk->tag & GC_TAG_MARK) {
+                chunk->tag &= ~GC_TAG_MARK;
+            } else {
+                total += chunk->size;
+                if (chunk->dtor) {
+                    chunk->dtor(chunk->ptr);
+                }
+                free(chunk->ptr);
+                gc_allocation_map_remove(gc->allocs, chunk->ptr);
+            }
+            chunk = chunk->next;
+        }
+    }
+    return total;
+}
+```
+
+We iterate over all allocations in the hash map (the `for` loop), following every
+chain (the `while` loop with the `chunk = chunk->next` update) and either (1)
+unmark the chunk if it was marked; or (2) call the destructor on the chunk and
+free the memory if it was not marked, keeping a running total of the amount of
+memory we free.
+
+That concludes the mark & sweep run. The stopped world is resumed and we're
+ready for the next run!
+
 
 
 [naive_mas]: https://en.wikipedia.org/wiki/Tracing_garbage_collection#Naïve_mark-and-sweep
