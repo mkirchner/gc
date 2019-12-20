@@ -348,11 +348,26 @@ static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*
     }
     return ptr;
 }
+
+static void gc_make_root(GarbageCollector* gc, void* ptr)
+{
+    Allocation* alloc = gc_allocation_map_get(gc->allocs, ptr);
+    if (alloc) {
+        alloc->tag |= GC_TAG_ROOT;
+    }
+}
+
 void* gc_malloc(GarbageCollector* gc, size_t size)
 {
     return gc_malloc_ext(gc, size, NULL);
 }
 
+void* gc_malloc_static(GarbageCollector* gc, size_t size, void(*dtor)(void*))
+{
+    void* ptr = gc_malloc_ext(gc, size, dtor);
+    gc_make_root(gc, ptr);
+    return ptr;
+}
 
 void* gc_malloc_ext(GarbageCollector* gc, size_t size, void(*dtor)(void*))
 {

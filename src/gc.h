@@ -36,6 +36,7 @@ size_t gc_run(GarbageCollector* gc);
  * Allocating and deallocating memory.
  */
 void* gc_malloc(GarbageCollector* gc, size_t size);
+void* gc_malloc_static(GarbageCollector* gc, size_t size, void (*dtor)(void*));
 void* gc_malloc_ext(GarbageCollector* gc, size_t size, void (*dtor)(void*));
 void* gc_calloc(GarbageCollector* gc, size_t count, size_t size);
 void* gc_calloc_ext(GarbageCollector* gc, size_t count, size_t size, void (*dtor)(void*));
