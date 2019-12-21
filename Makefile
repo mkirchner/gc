@@ -1,7 +1,7 @@
 CC=clang
 CFLAGS=-g -Wall -Wextra -pedantic -I./include
 LDFLAGS=-g -L./build/src
-LDLIBS=-ledit
+LDLIBS=
 RM=rm
 BUILD_DIR=./build
 
