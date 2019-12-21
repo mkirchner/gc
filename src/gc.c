@@ -317,7 +317,7 @@ static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*
     void* ptr = gc_mcalloc(count, size);
     size_t alloc_size = count ? count * size : size;
     /* If allocation fails, attempt to free some memory and try again. */
-    if (!ptr && (errno == EAGAIN || errno == ENOMEM)) {
+    if (!ptr && !gc->paused && (errno == EAGAIN || errno == ENOMEM)) {
         gc_run(gc);
         ptr = gc_mcalloc(count, size);
     }
@@ -328,7 +328,7 @@ static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*
         /* Deal with metadata allocation failure */
         if (alloc) {
             LOG_DEBUG("Managing %zu bytes at %p", alloc_size, (void*) alloc->ptr);
-            if (gc->allocs->size > gc->allocs->sweep_limit) {
+            if (gc->allocs->size > gc->allocs->sweep_limit && !gc->paused) {
                 size_t freed_mem = gc_run(gc);
                 LOG_DEBUG("Garbage collection cleaned up %lu bytes.", freed_mem);
             }
@@ -336,7 +336,9 @@ static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*
         } else {
             /* We failed to allocate the metadata, give it another try or at least
              * attempt to fail cleanly. */
-            gc_run(gc);
+            if (!gc->paused) {
+                gc_run(gc);
+            }
             alloc = gc_allocation_map_put(gc->allocs, ptr, alloc_size, dtor);
             if (alloc) {
                 ptr = alloc->ptr;

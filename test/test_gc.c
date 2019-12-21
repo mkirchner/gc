@@ -133,6 +133,36 @@ static char* test_gc_allocation_map_put_get_remove()
     return NULL;
 }
 
+static char* test_gc_allocation_map_cleanup()
+{
+    /* Make sure that the entries in the allocation map get reset
+     * to NULL when we delete things. This is required for the
+     * chunk != NULL checks when iterating over the items in the hash map.
+     */
+    GarbageCollector gc_;
+    int bos;
+    gc_start_ext(&gc_, &bos, 32, 32, 0.0, 1.1, 1.1);
+
+    /* run a few alloc/free cycles */
+    int** ptrs = gc_malloc(&gc_, 64*sizeof(int*));
+    for (size_t j=0; j<8; ++j) {
+        for (size_t i=0; i<64; ++i) {
+            ptrs[i] = gc_malloc(&gc_, i*sizeof(int));
+        }
+        for (size_t i=0; i<64; ++i) {
+            gc_free(&gc_, ptrs[i]);
+        }
+    }
+    gc_free(&gc_, ptrs);
+
+    /* now make sure that all allocation entries are NULL */
+    for (size_t i=0; i<gc_.allocs->capacity; ++i) {
+        mu_assert(gc_.allocs->allocs[i] == NULL, "Deleted allocs should be reset to NULL");
+    }
+    return NULL;
+}
+
+
 static char* test_gc_mark_stack()
 {
     GarbageCollector gc_;
@@ -241,6 +271,7 @@ static char* test_gc_basic_alloc_free()
     return NULL;
 }
 
+
 /*
  * Test runner
  */
@@ -256,6 +287,7 @@ static char* test_suite()
     mu_run_test(test_gc_allocation_map_put_get_remove);
     mu_run_test(test_gc_mark_stack);
     mu_run_test(test_gc_basic_alloc_free);
+    mu_run_test(test_gc_allocation_map_cleanup);
     return 0;
 }
 
