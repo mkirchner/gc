@@ -10,7 +10,7 @@ test:
 	$(MAKE) -C $@
 	$(BUILD_DIR)/test/test_gc
 
-coverage:
+coverage: test
 	$(MAKE) -C test coverage
 
 .PHONY: clean

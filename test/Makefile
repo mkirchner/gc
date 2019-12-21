@@ -1,6 +1,6 @@
 CC=clang
 CFLAGS=-g -Wall -Wextra -pedantic -I../include -fprofile-arcs -ftest-coverage
-LDFLAGS=-g -L../build/src --coverage
+LDFLAGS=-g -L../build/src -L../build/test --coverage
 LDLIBS=-ledit
 RM=rm
 BUILD_DIR=../build
@@ -34,6 +34,6 @@ clean:
 
 distclean: clean
 	$(RM) -f $(BUILD_DIR)/test/test_gc
-	$(RM) $(BUILD_DIR)/test/*gcda
-	$(RM) $(BUILD_DIR)/test/*gcno
+	$(RM) -f $(BUILD_DIR)/test/*gcda
+	$(RM) -f $(BUILD_DIR)/test/*gcno
 
