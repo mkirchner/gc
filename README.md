@@ -1,3 +1,5 @@
+![](https://github.com/mkirchner/gc/workflows/C/C++%20CI/badge.svg)
+
 # gc: mark & sweep garbage collection for C
 
 `gc` is an implementation of a conservative, thread-local, mark-and-sweep
@@ -41,7 +43,7 @@ Handbook][garbage_collection_handbook].
   * [Finding roots](#finding-roots)
   * [Depth-first recursive marking](#depth-first-recursive-marking)
   * [Dumping registers on the stack](#dumping-registers-on-the-stack)
-
+  * [Sweeping](#sweeping)
 
 ## Documentation Overview
 
