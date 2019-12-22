@@ -85,7 +85,7 @@ void some_fun() {
 }
 
 int main(int argc, char* argv[]) {
-    gc = gc_start(gc, &argc);
+    gc_start(gc, &argc);
     ...
     some_fun();
     ...
