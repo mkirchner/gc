@@ -393,20 +393,25 @@ size_t gc_sweep(GarbageCollector* gc)
     size_t total = 0;
     for (size_t i = 0; i < gc->allocs->capacity; ++i) {
         Allocation* chunk = gc->allocs->allocs[i];
+        Allocation* next = NULL;
         while (chunk) {
             if (chunk->tag & GC_TAG_MARK) {
+                /* unmark */
                 chunk->tag &= ~GC_TAG_MARK;
+                chunk = chunk->next;
             } else {
                 total += chunk->size;
                 if (chunk->dtor) {
                     chunk->dtor(chunk->ptr);
                 }
                 free(chunk->ptr);
-                gc_allocation_map_remove(gc->allocs, chunk->ptr);
+                next = chunk->next;
+                gc_allocation_map_remove(gc->allocs, chunk->ptr, false);
+                chunk = next;
             }
-            chunk = chunk->next;
         }
     }
+    gc_allocation_map_resize_to_fit(gc->allocs);
     return total;
 }
 ```
