@@ -1,3 +1,4 @@
+#include <float.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "minunit.h"
@@ -84,7 +85,7 @@ static char* test_gc_allocation_map_basic_get()
     mu_assert(b->dtor == dtor, "Failed to persist the dtor update");
 
     /* Delete the entry */
-    gc_allocation_map_remove(am, five);
+    gc_allocation_map_remove(am, five, true);
     mu_assert(am->size == 0, "After removing last item, map should be empty");
     Allocation* c = gc_allocation_map_get(am, five);
     mu_assert(c == NULL, "Empty allocation map must not contain any allocations");
@@ -105,7 +106,7 @@ static char* test_gc_allocation_map_put_get_remove()
      * The pigeonhole principle then states that we need to have at least one
      * entry in the hash map that has a separare chain with len > 1
      */
-    AllocationMap* am = gc_allocation_map_new(32, 32, 1.1, 0.0, 1.1);
+    AllocationMap* am = gc_allocation_map_new(32, 32, DBL_MAX, 0.0, DBL_MAX);
     Allocation* a;
     for (size_t i=0; i<64; ++i) {
         a = gc_allocation_map_put(am, ints[i], sizeof(int), NULL);
@@ -118,7 +119,7 @@ static char* test_gc_allocation_map_put_get_remove()
     mu_assert(am->size == 64, "Maps w/ 64 elements should have size 64");
     /* Now delete all of them again */
     for (size_t i=0; i<64; ++i) {
-        gc_allocation_map_remove(am, ints[i]);
+        gc_allocation_map_remove(am, ints[i], true);
     }
     mu_assert(am->size == 0, "Empty map must have size 0");
     /* And delete the entire map */
@@ -141,7 +142,7 @@ static char* test_gc_allocation_map_cleanup()
      */
     GarbageCollector gc_;
     int bos;
-    gc_start_ext(&gc_, &bos, 32, 32, 0.0, 1.1, 1.1);
+    gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
 
     /* run a few alloc/free cycles */
     int** ptrs = gc_malloc(&gc_, 64*sizeof(int*));
@@ -167,7 +168,7 @@ static char* test_gc_mark_stack()
 {
     GarbageCollector gc_;
     int bos;
-    gc_start_ext(&gc_, &bos, 32, 32, 0.0, 1.1, 1.1);
+    gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
     gc_pause(&gc_);
 
     /* Part 1: Create an object on the heap, reference from the stack,
@@ -225,7 +226,7 @@ static char* test_gc_basic_alloc_free()
      */
     GarbageCollector gc_;
     int bos;
-    gc_start_ext(&gc_, &bos, 32, 32, 0.0, 1.1, 1.1);
+    gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
 
     int** ints = gc_calloc(&gc_, 16, sizeof(int*));
     Allocation* a = gc_allocation_map_get(gc_.allocs, ints);
@@ -271,6 +272,50 @@ static char* test_gc_basic_alloc_free()
     return NULL;
 }
 
+static void _create_static_allocs(GarbageCollector* gc,
+                                  size_t count,
+                                  size_t size)
+{
+    for (size_t i=0; i<count; ++i) {
+        gc_malloc_static(gc, size, NULL);
+    }
+}
+
+static char* test_gc_static_allocation()
+{
+    GarbageCollector gc_;
+    int bos;
+    gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
+    /* allocate a bunch of static vars in a deeper stack frame */
+    size_t N = 256;
+    _create_static_allocs(&gc_, N, 512);
+    /* make sure they are not garbage collected */
+    size_t collected = gc_run(&gc_);
+    mu_assert(collected == 0, "Static objects should not be collected");
+    /* remove the root tag from the roots on the heap */
+    gc_unroot_roots(&gc_);
+    /* run the mark phase */
+    gc_mark(&gc_);
+    /* Check that none of the allocations were tagged. */
+    size_t total = 0;
+    size_t n = 0;
+    for (size_t i=0; i<gc_.allocs->capacity; ++i) {
+        Allocation* chunk = gc_.allocs->allocs[i];
+        while (chunk) {
+            mu_assert(!(chunk->tag & GC_TAG_MARK), "Marked an unused alloc");
+            mu_assert(!(chunk->tag & GC_TAG_ROOT), "Unrooting failed");
+            total += chunk->size;
+            n++;
+            chunk = chunk->next;
+        }
+    }
+    mu_assert(n == N, "Expected number of allocations is off");
+    mu_assert(total == N*512, "Expected number of managed bytes is off");
+    /* make sure we collect everything */
+    collected = gc_sweep(&gc_);
+    mu_assert(collected == N*512, "Unexpected number of bytes");
+    return NULL;
+}
 
 /*
  * Test runner
@@ -288,6 +333,7 @@ static char* test_suite()
     mu_run_test(test_gc_mark_stack);
     mu_run_test(test_gc_basic_alloc_free);
     mu_run_test(test_gc_allocation_map_cleanup);
+    mu_run_test(test_gc_static_allocation);
     return 0;
 }
 
