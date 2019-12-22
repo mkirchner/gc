@@ -5,13 +5,30 @@
 
 #include "../src/gc.c"
 
-static char sentinel[] = "NULL";
+#define UNUSED(x) (void)(x)
+
+static size_t DTOR_COUNT = 0;
+
+static char* test_primes()
+{
+    /*
+     * Test a few known cases.
+     */
+    mu_assert(!is_prime(0), "Prime test failure for 0");
+    mu_assert(!is_prime(1), "Prime test failure for 1");
+    mu_assert(is_prime(2), "Prime test failure for 2");
+    mu_assert(is_prime(3), "Prime test failure for 3");
+    mu_assert(!is_prime(12742382), "Prime test failure for 12742382");
+    mu_assert(is_prime(611953), "Prime test failure for 611953");
+    mu_assert(is_prime(479001599), "Prime test failure for 479001599");
+    return 0;
+}
 
 void dtor(void* ptr)
 {
-    ptr = (void*) sentinel;
+    UNUSED(ptr);
+    DTOR_COUNT++;
 }
-
 
 static char* test_gc_allocation_new_delete()
 {
@@ -140,12 +157,13 @@ static char* test_gc_allocation_map_cleanup()
      * to NULL when we delete things. This is required for the
      * chunk != NULL checks when iterating over the items in the hash map.
      */
+    DTOR_COUNT = 0;
     GarbageCollector gc_;
     int bos;
     gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
 
     /* run a few alloc/free cycles */
-    int** ptrs = gc_malloc(&gc_, 64*sizeof(int*));
+    int** ptrs = gc_malloc_ext(&gc_, 64*sizeof(int*), dtor);
     for (size_t j=0; j<8; ++j) {
         for (size_t i=0; i<64; ++i) {
             ptrs[i] = gc_malloc(&gc_, i*sizeof(int));
@@ -155,6 +173,8 @@ static char* test_gc_allocation_map_cleanup()
         }
     }
     gc_free(&gc_, ptrs);
+    mu_assert(DTOR_COUNT == 1, "Failed to call destructor for array");
+    DTOR_COUNT = 0;
 
     /* now make sure that all allocation entries are NULL */
     for (size_t i=0; i<gc_.allocs->capacity; ++i) {
@@ -224,6 +244,7 @@ static char* test_gc_basic_alloc_free()
      * the containing array and check if all the contained allocs are garbage
      * collected.
      */
+    DTOR_COUNT = 0;
     GarbageCollector gc_;
     int bos;
     gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
@@ -233,7 +254,7 @@ static char* test_gc_basic_alloc_free()
     mu_assert(a->size == 16*sizeof(int*), "Wrong allocation size");
 
     for (size_t i=0; i<16; ++i) {
-        ints[i] = gc_malloc(&gc_, sizeof(int));
+        ints[i] = gc_malloc_ext(&gc_, sizeof(int), dtor);
         *ints[i] = 42;
     }
     mu_assert(gc_.allocs->size == 17, "Wrong allocation map size");
@@ -269,6 +290,8 @@ static char* test_gc_basic_alloc_free()
 
     size_t n = gc_sweep(&gc_);
     mu_assert(n == total, "Wrong number of collected bytes");
+    mu_assert(DTOR_COUNT == 16, "Failed to call destructor");
+    DTOR_COUNT = 0;
     return NULL;
 }
 
@@ -277,12 +300,13 @@ static void _create_static_allocs(GarbageCollector* gc,
                                   size_t size)
 {
     for (size_t i=0; i<count; ++i) {
-        gc_malloc_static(gc, size, NULL);
+        gc_malloc_static(gc, size, dtor);
     }
 }
 
 static char* test_gc_static_allocation()
 {
+    DTOR_COUNT = 0;
     GarbageCollector gc_;
     int bos;
     gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
@@ -314,6 +338,48 @@ static char* test_gc_static_allocation()
     /* make sure we collect everything */
     collected = gc_sweep(&gc_);
     mu_assert(collected == N*512, "Unexpected number of bytes");
+    mu_assert(DTOR_COUNT == N, "Failed to call destructor");
+    DTOR_COUNT = 0;
+    return NULL;
+}
+
+static void _create_allocs(GarbageCollector* gc,
+                           size_t count,
+                           size_t size)
+{
+    for (size_t i=0; i<count; ++i) {
+        gc_malloc(gc, size);
+    }
+}
+
+static char* test_gc_pause_resume()
+{
+    GarbageCollector gc_;
+    int bos;
+    gc_start(&gc_, &bos);
+    /* allocate a bunch of vars in a deeper stack frame */
+    size_t N = 32;
+    _create_allocs(&gc_, N, 8);
+    /* make sure they are garbage collected after a  pause->resume cycle */
+    gc_pause(&gc_);
+    mu_assert(gc_.paused, "GC should be paused after pausing");
+    gc_resume(&gc_);
+    size_t collected = gc_run(&gc_);
+    mu_assert(collected == N*8, "Unexpected number of collected bytes");
+    return NULL;
+}
+
+char* test_gc_strdup()
+{
+    GarbageCollector gc_;
+    int bos;
+    gc_start(&gc_, &bos);
+    char* str = "This is a string";
+    char* copy = (char*) gc_strdup(&gc_, str);
+    mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
+    copy = NULL;
+    size_t collected = gc_run(&gc_);
+    mu_assert(collected == 17, "Unexpected number of collected bytes");
     return NULL;
 }
 
@@ -334,6 +400,9 @@ static char* test_suite()
     mu_run_test(test_gc_basic_alloc_free);
     mu_run_test(test_gc_allocation_map_cleanup);
     mu_run_test(test_gc_static_allocation);
+    mu_run_test(test_primes);
+    mu_run_test(test_gc_pause_resume);
+    mu_run_test(test_gc_strdup);
     return 0;
 }
 
