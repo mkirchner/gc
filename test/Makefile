@@ -1,4 +1,13 @@
-CC=clang
+CHECK := $(shell which clang)
+
+ifeq ($(CHECK),)
+$(warning no clang found, consider apt-get install clang, using gcc now)
+CC = gcc
+else
+$(info using clang over gcc)
+CC = clang
+endif
+
 CFLAGS=-g -Wall -Wextra -pedantic -I../include -fprofile-arcs -ftest-coverage
 LDFLAGS=-g -L../build/src -L../build/test --coverage
 LDLIBS=
