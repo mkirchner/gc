@@ -52,7 +52,7 @@ Handbook][garbage_collection_handbook].
   decisions that went into the implementation of `gc`.
 * Interleaved with the concepts, there are implementation sections that detail
   the implementation of the core components, see [hash map
-  implementation](#data-structures), [dumping regsiters on the
+  implementation](#data-structures), [dumping registers on the
   stack](#dumping-registers-on-the-stack), [finding roots](#finding-roots), and
   [depth-first, recursive marking](#depth-first-recursive-marking).
 
@@ -128,7 +128,7 @@ size_t gc_run(GarbageCollector* gc);
 ### Memory allocation and deallocation
 
 `gc` supports `malloc()`, `calloc()`and `realloc()`-style memory allocation.
-The respective funtion signatures mimick the POSIX functions (with the
+The respective function signatures mimick the POSIX functions (with the
 exception that we need to pass the garbage collector along as the first
 argument):
 
@@ -138,7 +138,7 @@ void* gc_calloc(GarbageCollector* gc, size_t count, size_t size);
 void* gc_realloc(GarbageCollector* gc, void* ptr, size_t size);
 ```
 
-It is possible to pass a pointer to a desctructor function through the
+It is possible to pass a pointer to a destructor function through the
 extended interface:
 
 ```c
