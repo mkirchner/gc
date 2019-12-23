@@ -45,7 +45,8 @@ static bool is_prime(size_t n)
     else if (n % 2==0 || n % 3==0)
         return false;     // check if n is divisible by 2 or 3
     else {
-        for (size_t i=5; i*i<=n; i+=6) {
+        size_t i;
+        for (i=5; i*i<=n; i+=6) {
             if (n % i == 0 || n%(i + 2) == 0)
                 return false;
         }
@@ -162,11 +163,12 @@ static AllocationMap* gc_allocation_map_new(size_t min_capacity,
 
 static void gc_allocation_map_delete(AllocationMap* am)
 {
+    Allocation *alloc, *tmp;
+    size_t i;
     // Iterate over the map
     LOG_DEBUG("Deleting allocation map (cap=%ld, siz=%ld)",
               am->capacity, am->size);
-    Allocation *alloc, *tmp;
-    for (size_t i = 0; i < am->capacity; ++i) {
+    for (i = 0; i < am->capacity; ++i) {
         if ((alloc = am->allocs[i])) {
             // Make sure to follow the chain inside a bucket
             while (alloc) {
@@ -188,6 +190,8 @@ static size_t gc_hash(void *ptr)
 
 static void gc_allocation_map_resize(AllocationMap* am, size_t new_capacity)
 {
+    Allocation** resized_allocs;
+    size_t i;
     if (new_capacity <= am->min_capacity) {
         return;
     }
@@ -195,9 +199,9 @@ static void gc_allocation_map_resize(AllocationMap* am, size_t new_capacity)
     // with a resized one and pushes items into the new, correct buckets
     LOG_DEBUG("Resizing allocation map (cap=%ld, siz=%ld) -> (cap=%ld)",
               am->capacity, am->size, new_capacity);
-    Allocation** resized_allocs = calloc(new_capacity, sizeof(Allocation*));
+    resized_allocs = (Allocation**) calloc(new_capacity, sizeof(Allocation*));
 
-    for (size_t i = 0; i < am->capacity; ++i) {
+    for (i = 0; i < am->capacity; ++i) {
         Allocation* alloc = am->allocs[i];
         while (alloc) {
             Allocation* next_alloc = alloc->next;
@@ -210,7 +214,7 @@ static void gc_allocation_map_resize(AllocationMap* am, size_t new_capacity)
     free(am->allocs);
     am->capacity = new_capacity;
     am->allocs = resized_allocs;
-    am->sweep_limit = am->size + am->sweep_factor * (am->capacity - am->size);
+    am->sweep_limit = am->size + (size_t)am->sweep_factor * (am->capacity - am->size);
 }
 
 static bool gc_allocation_map_resize_to_fit(AllocationMap* am)
@@ -248,11 +252,13 @@ static Allocation* gc_allocation_map_put(AllocationMap* am,
         size_t size,
         void (*dtor)(void*))
 {
+    Allocation* alloc, *cur, *prev;
+    void* p;
     size_t index = gc_hash(ptr) % am->capacity;
     LOG_DEBUG("PUT request for allocation ix=%ld", index);
-    Allocation* alloc = gc_allocation_new(ptr, size, dtor);
-    Allocation* cur = am->allocs[index];
-    Allocation* prev = NULL;
+    alloc = gc_allocation_new(ptr, size, dtor);
+    cur = am->allocs[index];
+    prev = NULL;
     /* Upsert if ptr is already known (e.g. dtor update). */
     while(cur != NULL) {
         if (cur->ptr == ptr) {
@@ -279,7 +285,7 @@ static Allocation* gc_allocation_map_put(AllocationMap* am,
     am->allocs[index] = alloc;
     am->size++;
     LOG_DEBUG("AllocationMap insert at ix=%ld", index);
-    void* p = alloc->ptr;
+    p = alloc->ptr;
     if (gc_allocation_map_resize_to_fit(am)) {
         alloc = gc_allocation_map_get(am, p);
     }
@@ -342,8 +348,9 @@ static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*
     }
     /* Start managing the memory we received from the system */
     if (ptr) {
+        Allocation* alloc;
         LOG_DEBUG("Allocated %zu bytes at %p", alloc_size, (void*) ptr);
-        Allocation* alloc = gc_allocation_map_put(gc->allocs, ptr, alloc_size, dtor);
+        alloc = gc_allocation_map_put(gc->allocs, ptr, alloc_size, dtor);
         /* Deal with metadata allocation failure */
         if (alloc) {
             LOG_DEBUG("Managing %zu bytes at %p", alloc_size, (void*) alloc->ptr);
@@ -411,13 +418,14 @@ void* gc_calloc_ext(GarbageCollector* gc, size_t count, size_t size,
 
 void* gc_realloc(GarbageCollector* gc, void* p, size_t size)
 {
+    void* q;
     Allocation* alloc = gc_allocation_map_get(gc->allocs, p);
     if (p && !alloc) {
         // the user passed an unknown pointer
         errno = EINVAL;
         return NULL;
     }
-    void* q = realloc(p, size);
+    q = realloc(p, size);
     if (!q) {
         // realloc failed but p is still valid
         return NULL;
@@ -492,11 +500,12 @@ void gc_mark_alloc(GarbageCollector* gc, void* ptr)
     Allocation* alloc = gc_allocation_map_get(gc->allocs, ptr);
     /* Mark if alloc exists and is not tagged already, otherwise skip */
     if (alloc && !(alloc->tag & GC_TAG_MARK)) {
+        char* p;
         LOG_DEBUG("Marking allocation (ptr=%p)", ptr);
         alloc->tag |= GC_TAG_MARK;
         /* Iterate over allocation contents and mark them as well */
         LOG_DEBUG("Checking allocation (ptr=%p, size=%lu) contents", ptr, alloc->size);
-        for (char* p = (char*) alloc->ptr;
+        for (p = (char*) alloc->ptr;
                 p < (char*) alloc->ptr + alloc->size;
                 ++p) {
             LOG_DEBUG("Checking allocation (ptr=%p) @%lu with value %p",
@@ -508,16 +517,18 @@ void gc_mark_alloc(GarbageCollector* gc, void* ptr)
 
 void gc_mark_stack(GarbageCollector* gc)
 {
+    char dummy=0;
+    void *tos, *bos;
+    char* p;
     LOG_DEBUG("Marking the stack (gc@%p) in increments of %ld", (void*) gc, sizeof(char));
-    char dummy;
-    void *tos = (void*) &dummy;
-    void *bos = gc->bos;
+    tos = (void*) &dummy;
+    bos = gc->bos;
     if (tos > bos) {
         void* tmp = tos;
         tos = gc->bos;
         bos = tmp;
     }
-    for (char* p = (char*) tos; p < (char*) bos; ++p) {
+    for (p = (char*) tos; p < (char*) bos; ++p) {
         // LOG_DEBUG("Checking stack location %p with value %p", (void*) p, *(void**)p);
         gc_mark_alloc(gc, *(void**)p);
     }
@@ -525,8 +536,9 @@ void gc_mark_stack(GarbageCollector* gc)
 
 void gc_mark_roots(GarbageCollector* gc)
 {
+    size_t i;
     LOG_DEBUG("Marking roots%s", "");
-    for (size_t i = 0; i < gc->allocs->capacity; ++i) {
+    for (i = 0; i < gc->allocs->capacity; ++i) {
         Allocation* chunk = gc->allocs->allocs[i];
         while (chunk) {
             if (chunk->tag & GC_TAG_ROOT) {
@@ -540,13 +552,14 @@ void gc_mark_roots(GarbageCollector* gc)
 
 void gc_mark(GarbageCollector* gc)
 {
+    void (*volatile _mark_stack)(GarbageCollector*);
+    jmp_buf ctx;
     /* Note: We only look at the stack and the heap, and ignore BSS. */
     LOG_DEBUG("Initiating GC mark (gc@%p)", (void*) gc);
     /* Scan the heap for roots */
     gc_mark_roots(gc);
     /* Dump registers onto stack and scan the stack */
-    void (*volatile _mark_stack)(GarbageCollector*) = gc_mark_stack;
-    jmp_buf ctx;
+    _mark_stack = gc_mark_stack;
     memset(&ctx, 0, sizeof(jmp_buf));
     setjmp(ctx);
     _mark_stack(gc);
@@ -554,9 +567,9 @@ void gc_mark(GarbageCollector* gc)
 
 size_t gc_sweep(GarbageCollector* gc)
 {
+    size_t total = 0, i;
     LOG_DEBUG("Initiating GC sweep (gc@%p)", (void*) gc);
-    size_t total = 0;
-    for (size_t i = 0; i < gc->allocs->capacity; ++i) {
+    for (i = 0; i < gc->allocs->capacity; ++i) {
         Allocation* chunk = gc->allocs->allocs[i];
         Allocation* next = NULL;
         /* Iterate over separate chaining */
@@ -592,8 +605,9 @@ size_t gc_sweep(GarbageCollector* gc)
  */
 void gc_unroot_roots(GarbageCollector* gc)
 {
+    size_t i;
     LOG_DEBUG("Unmarking roots%s", "");
-    for (size_t i = 0; i < gc->allocs->capacity; ++i) {
+    for (i = 0; i < gc->allocs->capacity; ++i) {
         Allocation* chunk = gc->allocs->allocs[i];
         while (chunk) {
             if (chunk->tag & GC_TAG_ROOT) {
@@ -606,9 +620,10 @@ void gc_unroot_roots(GarbageCollector* gc)
 
 size_t gc_stop(GarbageCollector* gc)
 {
+    size_t collected;
     gc_unroot_roots(gc);
     gc_mark(gc);
-    size_t collected = gc_sweep(gc);
+    collected = gc_sweep(gc);
     gc_allocation_map_delete(gc->allocs);
     return collected;
 }
@@ -623,10 +638,10 @@ size_t gc_run(GarbageCollector* gc)
 char* gc_strdup (GarbageCollector* gc, const char* s)
 {
     size_t len = strlen(s) + 1;
-    void *new = gc_malloc(gc, len);
+    void *_new = gc_malloc(gc, len);
 
-    if (new == NULL) {
+    if (_new == NULL) {
         return NULL;
     }
-    return (char*) memcpy(new, s, len);
+    return (char*) memcpy(_new, s, len);
 }
