@@ -155,7 +155,7 @@ static char* test_gc_allocation_map_put_get_remove()
 
 static char* test_gc_allocation_map_cleanup()
 {
-    GarbageCollector gc_;
+    GarbageCollector gc_ = { 0 };
     int bos;
     int** ptrs;
     size_t j, i;
@@ -249,7 +249,7 @@ static char* test_gc_mark_stack()
 
 static char* test_gc_basic_alloc_free()
 {
-    GarbageCollector gc_;
+    GarbageCollector gc_ = { 0 };
     int bos;
     int** ints;
     Allocation* a;
@@ -319,7 +319,7 @@ static void _create_static_allocs(GarbageCollector* gc,
 
 static char* test_gc_static_allocation()
 {
-    GarbageCollector gc_;
+    GarbageCollector gc_ = { 0 };
     int bos;
     size_t N;
     size_t collected, total, n, i;
@@ -370,7 +370,7 @@ static void _create_allocs(GarbageCollector* gc,
 
 static char* test_gc_pause_resume()
 {
-    GarbageCollector gc_;
+    GarbageCollector gc_ = { 0 };
     int bos;
     size_t N, collected;
     gc_start(&gc_, &bos);
@@ -388,7 +388,7 @@ static char* test_gc_pause_resume()
 
 char* test_gc_strdup()
 {
-    GarbageCollector gc_;
+    GarbageCollector gc_ = { 0 };
     int bos;
     char* str, *copy;
     size_t collected;
