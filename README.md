@@ -76,8 +76,8 @@ Handbook][garbage_collection_handbook].
 
 void some_fun() {
     ...
-    int* my_array = gc_calloc(gc, 1024, sizeof(int));
-    for (size_t i; i<1024; ++i) {
+    int* my_array = gc_calloc(&gc, 1024, sizeof(int));
+    for (size_t i=0; i<1024; ++i) {
         my_array[i] = 42;
     }
     ...
@@ -85,11 +85,11 @@ void some_fun() {
 }
 
 int main(int argc, char* argv[]) {
-    gc_start(gc, &argc);
+    gc_start(&gc, &argc);
     ...
     some_fun();
     ...
-    gc_stop(gc);
+    gc_stop(&gc);
     return 0;
 }
 ```
