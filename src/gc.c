@@ -214,7 +214,7 @@ static void gc_allocation_map_resize(AllocationMap* am, size_t new_capacity)
     free(am->allocs);
     am->capacity = new_capacity;
     am->allocs = resized_allocs;
-    am->sweep_limit = am->size + (size_t)am->sweep_factor * (am->capacity - am->size);
+    am->sweep_limit = am->size + (size_t)(am->sweep_factor * (am->capacity - am->size));
 }
 
 static bool gc_allocation_map_resize_to_fit(AllocationMap* am)
