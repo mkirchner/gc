@@ -295,7 +295,9 @@ static void gc_allocation_map_remove(AllocationMap* am,
     size_t index = gc_hash(ptr) % am->capacity;
     Allocation* cur = am->allocs[index];
     Allocation* prev = NULL;
+    Allocation* next;
     while(cur != NULL) {
+        next = cur->next;
         if (cur->ptr == ptr) {
             // found it
             if (!prev) {
@@ -311,7 +313,7 @@ static void gc_allocation_map_remove(AllocationMap* am,
             // move on
             prev = cur;
         }
-        cur = cur->next;
+        cur = next;
     }
     if (allow_resize) {
         gc_allocation_map_resize_to_fit(am);
