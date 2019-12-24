@@ -125,14 +125,13 @@ static char* test_gc_allocation_map_put_get_remove()
      * entry in the hash map that has a separare chain with len > 1
      */
     AllocationMap* am = gc_allocation_map_new(32, 32, DBL_MAX, 0.0, DBL_MAX);
-    Allocation* a;
     for (size_t i=0; i<64; ++i) {
-        a = gc_allocation_map_put(am, ints[i], sizeof(int), NULL);
+        gc_allocation_map_put(am, ints[i], sizeof(int), NULL);
     }
     mu_assert(am->size == 64, "Maps w/ 64 elements should have size 64");
     /* Now update all of them with a new dtor */
     for (size_t i=0; i<64; ++i) {
-        a = gc_allocation_map_put(am, ints[i], sizeof(int), dtor);
+        gc_allocation_map_put(am, ints[i], sizeof(int), dtor);
     }
     mu_assert(am->size == 64, "Maps w/ 64 elements should have size 64");
     /* Now delete all of them again */
@@ -401,7 +400,7 @@ static char* test_gc_pause_resume()
     mu_assert(gc_.paused, "GC should be paused after pausing");
     gc_resume(&gc_);
     size_t collected = gc_run(&gc_);
-    mu_assert(collected == N*8, "Unexpected number of collected bytes");
+    mu_assert(collected == N*8, "Unexpected number of collected bytes in pause/resume");
     return NULL;
 }
 
@@ -422,7 +421,7 @@ char* test_gc_strdup()
     mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
     copy = NULL;
     size_t collected = gc_run(&gc_);
-    mu_assert(collected == 17, "Unexpected number of collected bytes");
+    mu_assert(collected == 17, "Unexpected number of collected bytes in strdup");
     return NULL;
 }
 
