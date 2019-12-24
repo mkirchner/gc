@@ -205,7 +205,7 @@ static char* test_gc_mark_stack()
 
     /* Part 1: Create an object on the heap, reference from the stack,
      * and validate that it gets marked. */
-    five_ptr = (int **) gc_malloc(&gc_, 2*sizeof(int*));
+    five_ptr = (int **) gc_calloc(&gc_, 2, sizeof(int*));
     gc_mark_stack(&gc_);
     a = gc_allocation_map_get(gc_.allocs, five_ptr);
     mu_assert(a->tag & GC_TAG_MARK, "Heap allocation referenced from stack should be tagged");
@@ -245,6 +245,10 @@ static char* test_gc_mark_stack()
     a = gc_allocation_map_get(gc_.allocs, five_ptr[0]);
     mu_assert(a->tag & GC_TAG_MARK, "Referenced alloc should be tagged");
     mu_assert(unmarked_alloc->tag == GC_TAG_NONE, "Unreferenced alloc should not be tagged");
+
+    gc_free(&gc_, unmarked_alloc->ptr);
+    gc_free(&gc_, five_ptr[0]);
+    gc_free(&gc_, five_ptr);
     gc_stop(&gc_);
     return NULL;
 }
@@ -317,7 +321,8 @@ static void _create_static_allocs(GarbageCollector* gc,
 {
     size_t i;
     for (i=0; i<count; ++i) {
-        gc_malloc_static(gc, size, dtor);
+        void* p = gc_malloc_static(gc, size, dtor);
+        memset(p, 0, size);
     }
 }
 

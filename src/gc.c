@@ -238,7 +238,6 @@ static bool gc_allocation_map_resize_to_fit(AllocationMap* am)
 static Allocation* gc_allocation_map_get(AllocationMap* am, void* ptr)
 {
     size_t index = gc_hash(ptr) % am->capacity;
-    // LOG_DEBUG("GET request for allocation ix=%ld (ptr=%p)", index, ptr);
     Allocation* cur = am->allocs[index];
     while(cur) {
         if (cur->ptr == ptr) return cur;
