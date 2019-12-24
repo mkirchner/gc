@@ -180,6 +180,7 @@ static char* test_gc_allocation_map_cleanup()
     for (size_t i=0; i<gc_.allocs->capacity; ++i) {
         mu_assert(gc_.allocs->allocs[i] == NULL, "Deleted allocs should be reset to NULL");
     }
+    gc_stop(&gc_);
     return NULL;
 }
 
@@ -292,6 +293,7 @@ static char* test_gc_basic_alloc_free()
     mu_assert(n == total, "Wrong number of collected bytes");
     mu_assert(DTOR_COUNT == 16, "Failed to call destructor");
     DTOR_COUNT = 0;
+    gc_stop(&gc_);
     return NULL;
 }
 
@@ -340,6 +342,7 @@ static char* test_gc_static_allocation()
     mu_assert(collected == N*512, "Unexpected number of bytes");
     mu_assert(DTOR_COUNT == N, "Failed to call destructor");
     DTOR_COUNT = 0;
+    gc_stop(&gc_);
     return NULL;
 }
 
@@ -366,6 +369,7 @@ static char* test_gc_pause_resume()
     gc_resume(&gc_);
     size_t collected = gc_run(&gc_);
     mu_assert(collected == N*8, "Unexpected number of collected bytes");
+    gc_stop(&gc_);
     return NULL;
 }
 
@@ -380,6 +384,7 @@ char* test_gc_strdup()
     copy = NULL;
     size_t collected = gc_run(&gc_);
     mu_assert(collected == 17, "Unexpected number of collected bytes");
+    gc_stop(&gc_);
     return NULL;
 }
 
