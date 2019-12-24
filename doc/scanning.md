@@ -22,7 +22,7 @@ optimizations are platfrom/compiler-dependent and therefore out of the scope of
 In order to understand the scanning process, it is necessary to understand the
 standard memory layout of a C program:
 
-<img src="mem_layout.png" alt="" width="300"/>
+<img align="center" src="mem_layout.png" alt="" width="350"/>
 
 The key observations for our discussion are
 
