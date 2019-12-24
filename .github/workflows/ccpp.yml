@@ -3,11 +3,15 @@ name: C/C++ CI
 on: [push]
 
 jobs:
-  build:
-
+  build_clang:
     runs-on: ubuntu-latest
-    
     steps:
     - uses: actions/checkout@v1
-    - name: make test
-      run: make test
+    - name: make test (clang)
+      run: make test CC=clang
+  build_gcc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - name: make test (gcc)
+      run: make test CC=gcc

@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS=-g -Wall -Wextra -pedantic -I../include -fprofile-arcs -ftest-coverage
+CFLAGS=-g -Wall -Wextra -pedantic -I../include -fprofile-arcs -ftest-coverage -fno-stack-protector
 LDFLAGS=-g -L../build/src -L../build/test --coverage
 LDLIBS=
 RM=rm
