@@ -9,16 +9,6 @@
 
 static size_t DTOR_COUNT = 0;
 
-static void* _bottom_of_stack(unsigned long dummy)
-{
-#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
-    UNUSED(dummy);
-    return __builtin_frame_address(1); /* frame address of the caller of this func */
-#else
-    UNUSED(dummy);
-    return (void*) &dummy;
-#endif
-}
 
 static char* test_primes()
 {
@@ -170,7 +160,14 @@ static char* test_gc_allocation_map_cleanup()
      */
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    void* bos = _bottom_of_stack(0);
+    void* bos;
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+    bos = __builtin_frame_address(0);
+#else
+    unsigned long dummy;
+    UNUSED(dummy);
+    bos = (void*) &dummy;
+#endif
     gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
 
     /* run a few alloc/free cycles */
@@ -198,7 +195,14 @@ static char* test_gc_allocation_map_cleanup()
 static char* test_gc_mark_stack()
 {
     GarbageCollector gc_;
-    void* bos = _bottom_of_stack(0);
+    void* bos;
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+    bos = __builtin_frame_address(0);
+#else
+    unsigned long dummy;
+    UNUSED(dummy);
+    bos = (void*) &dummy;
+#endif
     gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
     gc_pause(&gc_);
 
@@ -257,7 +261,14 @@ static char* test_gc_basic_alloc_free()
      */
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    void* bos = _bottom_of_stack(0);
+    void* bos;
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+    bos = __builtin_frame_address(0);
+#else
+    unsigned long dummy;
+    UNUSED(dummy);
+    bos = (void*) &dummy;
+#endif
     gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
 
     int** ints = gc_calloc(&gc_, 16, sizeof(int*));
@@ -319,7 +330,14 @@ static char* test_gc_static_allocation()
 {
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    void* bos = _bottom_of_stack(0);
+    void* bos;
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+    bos = __builtin_frame_address(0);
+#else
+    unsigned long dummy;
+    UNUSED(dummy);
+    bos = (void*) &dummy;
+#endif
     gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
     /* allocate a bunch of static vars in a deeper stack frame */
     size_t N = 256;
@@ -366,7 +384,14 @@ static void _create_allocs(GarbageCollector* gc,
 static char* test_gc_pause_resume()
 {
     GarbageCollector gc_;
-    void* bos = _bottom_of_stack(0);
+    void* bos;
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+    bos = __builtin_frame_address(0);
+#else
+    unsigned long dummy;
+    UNUSED(dummy);
+    bos = (void*) &dummy;
+#endif
     gc_start(&gc_, bos);
     /* allocate a bunch of vars in a deeper stack frame */
     size_t N = 32;
@@ -383,7 +408,14 @@ static char* test_gc_pause_resume()
 char* test_gc_strdup()
 {
     GarbageCollector gc_;
-    void* bos = _bottom_of_stack(0);
+    void* bos;
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+    bos = __builtin_frame_address(0);
+#else
+    unsigned long dummy;
+    UNUSED(dummy);
+    bos = (void*) &dummy;
+#endif
     gc_start(&gc_, bos);
     char* str = "This is a string";
     char* copy = (char*) gc_strdup(&gc_, str);
