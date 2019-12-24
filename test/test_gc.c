@@ -419,8 +419,19 @@ char* test_gc_strdup()
     char* str = "This is a string";
     char* copy = (char*) gc_strdup(&gc_, str);
     mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
+    /* drop the ref */
     copy = NULL;
-    size_t collected = gc_run(&gc_);
+    gc_mark(&gc_);
+    /* make sure the string does not get marked */
+    for (size_t i=0; i<gc_.allocs->capacity; ++i) {
+        Allocation* chunk = gc_.allocs->allocs[i];
+        while (chunk) {
+            mu_assert(!(chunk->tag & GC_TAG_MARK), "String should not be marked anymore");
+            chunk = chunk->next;
+        }
+    }
+    size_t collected = gc_sweep(&gc_);
+    LOG_INFO("Collected: %lu", collected);
     mu_assert(collected == 17, "Unexpected number of collected bytes in strdup");
     return NULL;
 }
