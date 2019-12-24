@@ -107,6 +107,8 @@ static char* test_gc_allocation_map_basic_get()
     c = gc_allocation_map_get(am, five);
     mu_assert(c == NULL, "Empty allocation map must not contain any allocations");
 
+    gc_allocation_map_delete(am);
+    free(five);
     return NULL;
 }
 
