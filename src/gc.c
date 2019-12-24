@@ -509,8 +509,7 @@ void gc_mark_alloc(GarbageCollector* gc, void* ptr)
 void gc_mark_stack(GarbageCollector* gc)
 {
     LOG_DEBUG("Marking the stack (gc@%p) in increments of %ld", (void*) gc, sizeof(char));
-    char dummy;
-    void *tos = (void*) &dummy;
+    void *tos = __builtin_frame_address(0);
     void *bos = gc->bos;
     if (tos > bos) {
         void* tmp = tos;

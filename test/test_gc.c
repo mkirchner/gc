@@ -187,8 +187,7 @@ static char* test_gc_allocation_map_cleanup()
 static char* test_gc_mark_stack()
 {
     GarbageCollector gc_;
-    int bos;
-    gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
+    gc_start_ext(&gc_, __builtin_frame_address(0), 32, 32, 0.0, DBL_MAX, DBL_MAX);
     gc_pause(&gc_);
 
     /* Part 1: Create an object on the heap, reference from the stack,
