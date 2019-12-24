@@ -38,10 +38,8 @@ GarbageCollector gc; // global GC object
 static bool is_prime(size_t n)
 {
     /* https://stackoverflow.com/questions/1538644/c-determine-if-a-number-is-prime */
-    if (n <= 1)
-        return false;
-    else if (n <= 3 && n > 1)
-        return true;            // as 2 and 3 are prime
+    if (n <= 3)
+        return n > 1;     // as 2 and 3 are prime
     else if (n % 2==0 || n % 3==0)
         return false;     // check if n is divisible by 2 or 3
     else {
