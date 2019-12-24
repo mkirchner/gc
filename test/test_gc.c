@@ -151,7 +151,7 @@ static char* test_gc_allocation_map_put_get_remove()
     return NULL;
 }
 
-static char* test_gc_allocation_map_cleanup()
+static char* test_gc_allocation_map_cleanup(unsigned long bos)
 {
     /* Make sure that the entries in the allocation map get reset
      * to NULL when we delete things. This is required for the
@@ -159,7 +159,6 @@ static char* test_gc_allocation_map_cleanup()
      */
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    int bos;
     gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
 
     /* run a few alloc/free cycles */
@@ -185,10 +184,9 @@ static char* test_gc_allocation_map_cleanup()
 }
 
 
-static char* test_gc_mark_stack()
+static char* test_gc_mark_stack(unsigned long bos)
 {
     GarbageCollector gc_;
-    int bos;
     gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
     gc_pause(&gc_);
 
@@ -239,7 +237,7 @@ static char* test_gc_mark_stack()
 }
 
 
-static char* test_gc_basic_alloc_free()
+static char* test_gc_basic_alloc_free(unsigned long bos)
 {
     /* Create an array of pointers to an int. Then delete the pointer to
      * the containing array and check if all the contained allocs are garbage
@@ -247,7 +245,6 @@ static char* test_gc_basic_alloc_free()
      */
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    int bos;
     gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
 
     int** ints = gc_calloc(&gc_, 16, sizeof(int*));
@@ -306,11 +303,10 @@ static void _create_static_allocs(GarbageCollector* gc,
     }
 }
 
-static char* test_gc_static_allocation()
+static char* test_gc_static_allocation(unsigned long bos)
 {
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    int bos;
     gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
     /* allocate a bunch of static vars in a deeper stack frame */
     size_t N = 256;
@@ -355,10 +351,9 @@ static void _create_allocs(GarbageCollector* gc,
     }
 }
 
-static char* test_gc_pause_resume()
+static char* test_gc_pause_resume(unsigned long bos)
 {
     GarbageCollector gc_;
-    int bos;
     gc_start(&gc_, &bos);
     /* allocate a bunch of vars in a deeper stack frame */
     size_t N = 32;
@@ -373,10 +368,9 @@ static char* test_gc_pause_resume()
     return NULL;
 }
 
-char* test_gc_strdup()
+char* test_gc_strdup(unsigned long bos)
 {
     GarbageCollector gc_;
-    int bos;
     gc_start(&gc_, &bos);
     char* str = "This is a string";
     char* copy = (char*) gc_strdup(&gc_, str);
@@ -401,13 +395,13 @@ static char* test_suite()
     mu_run_test(test_gc_allocation_map_new_delete);
     mu_run_test(test_gc_allocation_map_basic_get);
     mu_run_test(test_gc_allocation_map_put_get_remove);
-    mu_run_test(test_gc_mark_stack);
-    mu_run_test(test_gc_basic_alloc_free);
-    mu_run_test(test_gc_allocation_map_cleanup);
-    mu_run_test(test_gc_static_allocation);
+    mu_run_test(test_gc_mark_stack, 0);
+    mu_run_test(test_gc_basic_alloc_free, 0);
+    mu_run_test(test_gc_allocation_map_cleanup, 0);
+    mu_run_test(test_gc_static_allocation, 0);
     mu_run_test(test_primes);
-    mu_run_test(test_gc_pause_resume);
-    mu_run_test(test_gc_strdup);
+    mu_run_test(test_gc_pause_resume, 0);
+    mu_run_test(test_gc_strdup, 0);
     return 0;
 }
 
