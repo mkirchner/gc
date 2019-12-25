@@ -355,8 +355,8 @@ static void _create_allocs(GarbageCollector* gc,
 static char* test_gc_pause_resume()
 {
     GarbageCollector gc_;
-    int bos;
-    gc_start(&gc_, &bos);
+    void *bos = __builtin_frame_address(0);
+    gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
     /* allocate a bunch of vars in a deeper stack frame */
     size_t N = 32;
     _create_allocs(&gc_, N, 8);
