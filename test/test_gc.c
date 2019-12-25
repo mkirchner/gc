@@ -309,7 +309,7 @@ static char* test_gc_static_allocation()
     DTOR_COUNT = 0;
     GarbageCollector gc_;
     void *bos = __builtin_frame_address(0);
-    gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
+    gc_start(&gc_, &bos);
     /* allocate a bunch of static vars in a deeper stack frame */
     size_t N = 256;
     _create_static_allocs(&gc_, N, 512);
@@ -372,8 +372,8 @@ static char* test_gc_pause_resume()
 char* test_gc_strdup()
 {
     GarbageCollector gc_;
-    int bos;
-    gc_start(&gc_, &bos);
+    void *bos = __builtin_frame_address(0);
+    gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
     char* str = "This is a string";
     char* copy = (char*) gc_strdup(&gc_, str);
     mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
