@@ -159,8 +159,8 @@ static char* test_gc_allocation_map_cleanup()
      */
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    int bos;
-    gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
+    void *bos = __builtin_frame_address(0);
+    gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
 
     /* run a few alloc/free cycles */
     int** ptrs = gc_malloc_ext(&gc_, 64*sizeof(int*), dtor);
