@@ -509,13 +509,8 @@ void gc_mark_stack(GarbageCollector* gc)
     char dummy;
     void *tos = (void*) &dummy;
     void *bos = gc->bos;
-    if (tos > bos) {
-        void* tmp = tos;
-        tos = gc->bos;
-        bos = tmp;
-    }
+    /* The stack grows towards smaller memory addresses, hence we scan tos->bos */
     for (char* p = (char*) tos; p < (char*) bos; ++p) {
-        // LOG_DEBUG("Checking stack location %p with value %p", (void*) p, *(void**)p);
         gc_mark_alloc(gc, *(void**)p);
     }
 }
