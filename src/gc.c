@@ -545,8 +545,12 @@ void gc_mark(GarbageCollector* gc)
     LOG_DEBUG("Initiating GC mark (gc@%p)", (void*) gc);
     /* Scan the heap for roots */
     gc_mark_roots(gc);
-
-    gc_mark_stack(gc);
+    /* Dump registers onto stack and scan the stack */
+    void (*volatile _mark_stack)(GarbageCollector*) = gc_mark_stack;
+    jmp_buf ctx;
+    memset(&ctx, 0, sizeof(jmp_buf));
+    setjmp(ctx);
+    _mark_stack(gc);
 }
 
 size_t gc_sweep(GarbageCollector* gc)

@@ -369,15 +369,19 @@ static char* test_gc_pause_resume()
     return NULL;
 }
 
+static void* duplicate_string(GarbageCollector* gc, char* str)
+{
+    char* copy = (char*) gc_strdup(gc, str);
+    mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
+}
+
 char* test_gc_strdup()
 {
     GarbageCollector gc_;
     void *bos = __builtin_frame_address(0);
     gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
     char* str = "This is a string";
-    char* copy = (char*) gc_strdup(&gc_, str);
-    mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
-    copy = NULL;
+    duplicate_string(&gc_, str);
     size_t collected = gc_run(&gc_);
     mu_assert(collected == 17, "Unexpected number of collected bytes");
     return NULL;
