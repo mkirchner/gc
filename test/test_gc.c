@@ -356,7 +356,7 @@ static char* test_gc_pause_resume()
 {
     GarbageCollector gc_;
     void *bos = __builtin_frame_address(0);
-    gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
+    gc_start(&gc_, &bos);
     /* allocate a bunch of vars in a deeper stack frame */
     size_t N = 32;
     _create_allocs(&gc_, N, 8);
@@ -379,7 +379,7 @@ char* test_gc_strdup()
 {
     GarbageCollector gc_;
     void *bos = __builtin_frame_address(0);
-    gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
+    gc_start(&gc_, bos);
     char* str = "This is a string";
     duplicate_string(&gc_, str);
     size_t collected = gc_run(&gc_);
