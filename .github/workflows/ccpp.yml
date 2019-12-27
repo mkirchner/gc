@@ -4,7 +4,7 @@ on: [push]
 
 jobs:
   build:
-    name: Build & test ${{ matrix.compiler }} on ${{ matrix.os }}
+    name: ${{ matrix.os }} | ${{ matrix.compiler }} 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
