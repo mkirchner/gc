@@ -318,7 +318,7 @@ static char* test_gc_static_allocation()
     DTOR_COUNT = 0;
     GarbageCollector gc_;
     void *bos = __builtin_frame_address(0);
-    gc_start(&gc_, &bos);
+    gc_start(&gc_, bos);
     /* allocate a bunch of static vars in a deeper stack frame */
     size_t N = 256;
     _create_static_allocs(&gc_, N, 512);
@@ -366,7 +366,7 @@ static char* test_gc_pause_resume()
 {
     GarbageCollector gc_;
     void *bos = __builtin_frame_address(0);
-    gc_start(&gc_, &bos);
+    gc_start(&gc_, bos);
     /* allocate a bunch of vars in a deeper stack frame */
     size_t N = 32;
     _create_allocs(&gc_, N, 8);
@@ -384,6 +384,7 @@ static void* duplicate_string(GarbageCollector* gc, char* str)
 {
     char* copy = (char*) gc_strdup(gc, str);
     mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
+    return NULL;
 }
 
 char* test_gc_strdup()
