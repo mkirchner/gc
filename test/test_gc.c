@@ -328,7 +328,7 @@ static char* test_gc_static_allocation()
     /* remove the root tag from the roots on the heap */
     gc_unroot_roots(&gc_);
     /* run the mark phase */
-    gc_mark(&gc_);
+    gc_mark_roots(&gc_);
     /* Check that none of the allocations were tagged. */
     size_t total = 0;
     size_t n = 0;
