@@ -161,8 +161,8 @@ static char* test_gc_allocation_map_cleanup()
      */
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    int bos;
-    gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
+    void *bos = __builtin_frame_address(0);
+    gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
 
     /* run a few alloc/free cycles */
     int** ptrs = gc_malloc_ext(&gc_, 64*sizeof(int*), dtor);
@@ -190,8 +190,8 @@ static char* test_gc_allocation_map_cleanup()
 static char* test_gc_mark_stack()
 {
     GarbageCollector gc_;
-    int bos;
-    gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
+    void *bos = __builtin_frame_address(0);
+    gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
     gc_pause(&gc_);
 
     /* Part 1: Create an object on the heap, reference from the stack,
@@ -253,8 +253,8 @@ static char* test_gc_basic_alloc_free()
      */
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    int bos;
-    gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
+    void *bos = __builtin_frame_address(0);
+    gc_start_ext(&gc_, bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
 
     int** ints = gc_calloc(&gc_, 16, sizeof(int*));
     Allocation* a = gc_allocation_map_get(gc_.allocs, ints);
@@ -317,8 +317,8 @@ static char* test_gc_static_allocation()
 {
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    int bos;
-    gc_start_ext(&gc_, &bos, 32, 32, 0.0, DBL_MAX, DBL_MAX);
+    void *bos = __builtin_frame_address(0);
+    gc_start(&gc_, &bos);
     /* allocate a bunch of static vars in a deeper stack frame */
     size_t N = 256;
     _create_static_allocs(&gc_, N, 512);
@@ -365,7 +365,7 @@ static void _create_allocs(GarbageCollector* gc,
 static char* test_gc_pause_resume()
 {
     GarbageCollector gc_;
-    int bos;
+    void *bos = __builtin_frame_address(0);
     gc_start(&gc_, &bos);
     /* allocate a bunch of vars in a deeper stack frame */
     size_t N = 32;
@@ -380,15 +380,19 @@ static char* test_gc_pause_resume()
     return NULL;
 }
 
+static void* duplicate_string(GarbageCollector* gc, char* str)
+{
+    char* copy = (char*) gc_strdup(gc, str);
+    mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
+}
+
 char* test_gc_strdup()
 {
     GarbageCollector gc_;
-    int bos;
-    gc_start(&gc_, &bos);
+    void *bos = __builtin_frame_address(0);
+    gc_start(&gc_, bos);
     char* str = "This is a string";
-    char* copy = (char*) gc_strdup(&gc_, str);
-    mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
-    copy = NULL;
+    duplicate_string(&gc_, str);
     size_t collected = gc_run(&gc_);
     mu_assert(collected == 17, "Unexpected number of collected bytes");
     gc_stop(&gc_);
