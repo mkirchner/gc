@@ -16,7 +16,7 @@ jobs:
       run: make test CC=${{ matrix.compiler }}
   coverage:
     name: Coverage
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v1    
       - name: Install lcov
