@@ -318,7 +318,7 @@ static char* test_gc_static_allocation()
     DTOR_COUNT = 0;
     GarbageCollector gc_;
     void *bos = __builtin_frame_address(0);
-    gc_start(&gc_, &bos);
+    gc_start(&gc_, bos);
     /* allocate a bunch of static vars in a deeper stack frame */
     size_t N = 256;
     _create_static_allocs(&gc_, N, 512);
@@ -328,7 +328,7 @@ static char* test_gc_static_allocation()
     /* remove the root tag from the roots on the heap */
     gc_unroot_roots(&gc_);
     /* run the mark phase */
-    gc_mark(&gc_);
+    gc_mark_roots(&gc_);
     /* Check that none of the allocations were tagged. */
     size_t total = 0;
     size_t n = 0;
@@ -366,7 +366,7 @@ static char* test_gc_pause_resume()
 {
     GarbageCollector gc_;
     void *bos = __builtin_frame_address(0);
-    gc_start(&gc_, &bos);
+    gc_start(&gc_, bos);
     /* allocate a bunch of vars in a deeper stack frame */
     size_t N = 32;
     _create_allocs(&gc_, N, 8);
@@ -380,10 +380,11 @@ static char* test_gc_pause_resume()
     return NULL;
 }
 
-static void* duplicate_string(GarbageCollector* gc, char* str)
+static char* duplicate_string(GarbageCollector* gc, char* str)
 {
     char* copy = (char*) gc_strdup(gc, str);
     mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
+    return NULL;
 }
 
 char* test_gc_strdup()
@@ -392,7 +393,8 @@ char* test_gc_strdup()
     void *bos = __builtin_frame_address(0);
     gc_start(&gc_, bos);
     char* str = "This is a string";
-    duplicate_string(&gc_, str);
+    char* error = duplicate_string(&gc_, str);
+    mu_assert(error == NULL, "Duplication failed"); // cascade minunit tests
     size_t collected = gc_run(&gc_);
     mu_assert(collected == 17, "Unexpected number of collected bytes");
     gc_stop(&gc_);
