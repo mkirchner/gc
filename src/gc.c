@@ -238,7 +238,9 @@ static Allocation* gc_allocation_map_get(AllocationMap* am, void* ptr)
     size_t index = gc_hash(ptr) % am->capacity;
     Allocation* cur = am->allocs[index];
     while(cur) {
-        if (cur->ptr == ptr) return cur;
+        if (cur->ptr == ptr) {
+            return cur;
+        }
         cur = cur->next;
     }
     return NULL;
@@ -514,11 +516,10 @@ void gc_mark_alloc(GarbageCollector* gc, void* ptr)
 
 void gc_mark_stack(GarbageCollector* gc)
 {
-    char dummy=0;
     void *tos, *bos;
     char* p;
     LOG_DEBUG("Marking the stack (gc@%p) in increments of %ld", (void*) gc, sizeof(char));
-    tos = (void*) &dummy;
+    tos = __builtin_frame_address(0);
     bos = gc->bos;
     /* The stack grows towards smaller memory addresses, hence we scan tos->bos */
     for (p = (char*) tos; p < (char*) bos; ++p) {
