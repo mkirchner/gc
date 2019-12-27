@@ -16,14 +16,16 @@ jobs:
       run: make test CC=${{ matrix.compiler }}
   coverage:
     name: Coverage
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1    
       - name: Install lcov
         run: sudo apt-get install -y lcov
-      - name: make coverage (clang)
-        run: make CC=clang && make coverage
-      - name: Coveralls
+      - name: Build & test
+        run: make CC=clang
+      - name: Collect coverage
+        run: make coverage
+      - name: Push to Coveralls
         uses: coverallsapp/github-action@master
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
