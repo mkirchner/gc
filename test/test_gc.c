@@ -380,7 +380,7 @@ static char* test_gc_pause_resume()
     return NULL;
 }
 
-static void* duplicate_string(GarbageCollector* gc, char* str)
+static char* duplicate_string(GarbageCollector* gc, char* str)
 {
     char* copy = (char*) gc_strdup(gc, str);
     mu_assert(strncmp(str, copy, 16) == 0, "Strings should be equal");
@@ -393,7 +393,8 @@ char* test_gc_strdup()
     void *bos = __builtin_frame_address(0);
     gc_start(&gc_, bos);
     char* str = "This is a string";
-    duplicate_string(&gc_, str);
+    char* error = duplicate_string(&gc_, str);
+    mu_assert(error == NULL, "Duplication failed"); // cascade minunit tests
     size_t collected = gc_run(&gc_);
     mu_assert(collected == 17, "Unexpected number of collected bytes");
     gc_stop(&gc_);
