@@ -3,15 +3,14 @@ name: C/C++ CI
 on: [push]
 
 jobs:
-  build_clang:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v1
-    - name: make test (clang)
-      run: make test CC=clang
-  build_gcc:
-    runs-on: ubuntu-latest
+  build:
+    name: ${{ matrix.os }} | ${{ matrix.compiler }} 
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        compiler: [clang, gcc]
     steps:
     - uses: actions/checkout@v1      
-    - name: make test (gcc)
-      run: make test CC=gcc
+    - name: make test (${{ matrix.compiler }})
+      run: make test CC=${{ matrix.compiler }}
