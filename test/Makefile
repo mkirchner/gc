@@ -1,3 +1,4 @@
+# CC=gcc
 CC=clang
 CFLAGS=-g -Wall -Wextra -pedantic -I../include -fprofile-arcs -ftest-coverage
 LDFLAGS=-g -L../build/src -L../build/test --coverage

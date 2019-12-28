@@ -317,8 +317,8 @@ static char* test_gc_static_allocation()
 {
     DTOR_COUNT = 0;
     GarbageCollector gc_;
-    void *bos = __builtin_frame_address(0);
-    gc_start(&gc_, bos);
+    void *bos = NULL;
+    gc_start(&gc_, &bos);
     /* allocate a bunch of static vars in a deeper stack frame */
     size_t N = 256;
     _create_static_allocs(&gc_, N, 512);
