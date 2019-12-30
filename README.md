@@ -212,7 +212,7 @@ than more optimized approaches.
 The core data structure inside `gc` is a hash map that maps the address of
 allocated memory to the garbage collection metadata of that memory:
 
-The items in the hash map are allocations, modeles with the `Allocation`
+The items in the hash map are allocations, modeled with the `Allocation`
 `struct`:
 
 ```c
