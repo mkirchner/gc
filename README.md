@@ -388,14 +388,14 @@ use, collecting the unreachable allocations is trivial. Here is the
 implementation from `gc_sweep()`:
 
 ```c
-size_t gc_sweep(GarbageCollector* gc)
+size_t gc_sweep(GarbageCollector* gc, bool clearAll)
 {
     size_t total = 0;
     for (size_t i = 0; i < gc->allocs->capacity; ++i) {
         Allocation* chunk = gc->allocs->allocs[i];
         Allocation* next = NULL;
         while (chunk) {
-            if (chunk->tag & GC_TAG_MARK) {
+            if ((clearAll==false) && (chunk->tag & GC_TAG_MARK)) {
                 /* unmark */
                 chunk->tag &= ~GC_TAG_MARK;
                 chunk = chunk->next;
