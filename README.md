@@ -395,7 +395,7 @@ size_t gc_sweep(GarbageCollector* gc, bool clearAll)
         Allocation* chunk = gc->allocs->allocs[i];
         Allocation* next = NULL;
         while (chunk) {
-            if ((clearAll==false) && (chunk->tag & GC_TAG_MARK)) {
+            if ((clearAll == false) && (chunk->tag & GC_TAG_MARK)) {
                 /* unmark */
                 chunk->tag &= ~GC_TAG_MARK;
                 chunk = chunk->next;
