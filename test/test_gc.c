@@ -237,9 +237,6 @@ static char* test_gc_mark_stack()
     mu_assert(a->tag & GC_TAG_MARK, "Referenced alloc should be tagged");
     mu_assert(unmarked_alloc->tag == GC_TAG_NONE, "Unreferenced alloc should not be tagged");
 
-    gc_free(&gc_, unmarked_alloc->ptr);
-    gc_free(&gc_, five_ptr[0]);
-    gc_free(&gc_, five_ptr);
     gc_stop(&gc_);
     return NULL;
 }
@@ -295,7 +292,7 @@ static char* test_gc_basic_alloc_free()
     mu_assert(total == 16 * sizeof(int) + 16 * sizeof(int*),
               "Expected number of managed bytes is off");
 
-    size_t n = gc_sweep(&gc_);
+    size_t n = gc_sweep(&gc_, false);
     mu_assert(n == total, "Wrong number of collected bytes");
     mu_assert(DTOR_COUNT == 16, "Failed to call destructor");
     DTOR_COUNT = 0;
@@ -345,7 +342,7 @@ static char* test_gc_static_allocation()
     mu_assert(n == N, "Expected number of allocations is off");
     mu_assert(total == N*512, "Expected number of managed bytes is off");
     /* make sure we collect everything */
-    collected = gc_sweep(&gc_);
+    collected = gc_sweep(&gc_, false);
     mu_assert(collected == N*512, "Unexpected number of bytes");
     mu_assert(DTOR_COUNT == N, "Failed to call destructor");
     DTOR_COUNT = 0;
