@@ -554,7 +554,7 @@ size_t gc_sweep(GarbageCollector* gc, bool clearAll)
         Allocation* next = NULL;
         /* Iterate over separate chaining */
         while (chunk) {
-            if ((clearAll==false) && (chunk->tag & GC_TAG_MARK)) {
+            if ((clearAll == false) && (chunk->tag & GC_TAG_MARK)) {
                 LOG_DEBUG("Found used allocation %p (ptr=%p)", (void*) chunk, (void*) chunk->ptr);
                 /* unmark */
                 chunk->tag &= ~GC_TAG_MARK;
