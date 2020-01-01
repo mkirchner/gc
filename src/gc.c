@@ -545,7 +545,7 @@ void gc_mark(GarbageCollector* gc)
     _mark_stack(gc);
 }
 
-size_t gc_sweep(GarbageCollector* gc)
+size_t gc_sweep(GarbageCollector* gc, bool clearAll)
 {
     LOG_DEBUG("Initiating GC sweep (gc@%p)", (void*) gc);
     size_t total = 0;
@@ -554,7 +554,7 @@ size_t gc_sweep(GarbageCollector* gc)
         Allocation* next = NULL;
         /* Iterate over separate chaining */
         while (chunk) {
-            if (chunk->tag & GC_TAG_MARK) {
+            if ((clearAll==false) && (chunk->tag & GC_TAG_MARK)) {
                 LOG_DEBUG("Found used allocation %p (ptr=%p)", (void*) chunk, (void*) chunk->ptr);
                 /* unmark */
                 chunk->tag &= ~GC_TAG_MARK;
@@ -600,7 +600,7 @@ void gc_unroot_roots(GarbageCollector* gc)
 size_t gc_stop(GarbageCollector* gc)
 {
     gc_unroot_roots(gc);
-    size_t collected = gc_sweep(gc);
+    size_t collected = gc_sweep(gc, true);
     gc_allocation_map_delete(gc->allocs);
     return collected;
 }
@@ -609,7 +609,7 @@ size_t gc_run(GarbageCollector* gc)
 {
     LOG_DEBUG("Initiating GC run (gc@%p)", (void*) gc);
     gc_mark(gc);
-    return gc_sweep(gc);
+    return gc_sweep(gc, false);
 }
 
 char* gc_strdup (GarbageCollector* gc, const char* s)
