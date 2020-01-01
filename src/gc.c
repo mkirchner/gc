@@ -615,7 +615,6 @@ size_t gc_stop(GarbageCollector* gc)
 {
     size_t collected;
     gc_unroot_roots(gc);
-    gc_mark(gc);
     collected = gc_sweep(gc);
     gc_allocation_map_delete(gc->allocs);
     return collected;
