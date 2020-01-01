@@ -600,7 +600,6 @@ void gc_unroot_roots(GarbageCollector* gc)
 size_t gc_stop(GarbageCollector* gc)
 {
     gc_unroot_roots(gc);
-    gc_mark(gc);
     size_t collected = gc_sweep(gc);
     gc_allocation_map_delete(gc->allocs);
     return collected;
