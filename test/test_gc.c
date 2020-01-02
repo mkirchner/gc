@@ -7,6 +7,10 @@
 
 #define UNUSED(x) (void)(x)
 
+#if defined(_MSC_VER)
+#define __builtin_frame_address(x)  ((void)(x), _AddressOfReturnAddress())
+#endif
+
 static size_t DTOR_COUNT = 0;
 
 static char* test_primes()

@@ -24,6 +24,14 @@
 #define GC_TAG_ROOT 0x1
 #define GC_TAG_MARK 0x2
 
+/* 
+ * Support for windows c compiler is added by adding this macro.
+ * Tested on: Microsoft (R) C/C++ Optimizing Compiler Version 19.24.28314 for x86
+ */
+#if defined(_MSC_VER)
+#define __builtin_frame_address(x)  ((void)(x), _AddressOfReturnAddress())
+#endif
+
 /*
  * Define a globally available GC object; this allows all code that
  * includes the gc.h header to access a global static garbage collector.
