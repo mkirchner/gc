@@ -59,12 +59,23 @@ Handbook][garbage_collection_handbook].
 
 ## Quickstart
 
-### Download and test
+### Download, compile and test
 
     $ git clone git@github.com:mkirchner/gc.git
     $ cd gc
+    
+To compile using the `clang` compiler:
+
     $ make test
-    $ make coverage  # to open the current coverage in a browser
+    
+To use the GNU Compiler Collection (GCC):
+
+    $ make test CC=gcc
+    
+The tests should complete successfully. To create the current coverage report:
+
+    $ make coverage
+
 
 ### Basic usage
 
