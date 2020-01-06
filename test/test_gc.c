@@ -374,7 +374,12 @@ static char* test_gc_pause_resume()
     gc_pause(&gc_);
     mu_assert(gc_.paused, "GC should be paused after pausing");
     gc_resume(&gc_);
-    size_t collected = gc_run(&gc_);
+
+    /* Avoid dumping the registers on the stack to make test less flaky */
+    gc_mark_roots(&gc_);
+    gc_mark_stack(&gc_);
+    size_t collected = gc_sweep(&gc_);
+
     mu_assert(collected == N*8, "Unexpected number of collected bytes in pause/resume");
     gc_stop(&gc_);
     return NULL;
