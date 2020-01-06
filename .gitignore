@@ -50,7 +50,3 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-
-# Other
-cscope.out
-*.swp
