@@ -375,7 +375,7 @@ static char* test_gc_pause_resume()
     mu_assert(gc_.paused, "GC should be paused after pausing");
     gc_resume(&gc_);
     size_t collected = gc_run(&gc_);
-    mu_assert(collected == N*8, "Unexpected number of collected bytes");
+    mu_assert(collected == N*8, "Unexpected number of collected bytes in pause/resume");
     gc_stop(&gc_);
     return NULL;
 }
@@ -396,7 +396,7 @@ char* test_gc_strdup()
     char* error = duplicate_string(&gc_, str);
     mu_assert(error == NULL, "Duplication failed"); // cascade minunit tests
     size_t collected = gc_run(&gc_);
-    mu_assert(collected == 17, "Unexpected number of collected bytes");
+    mu_assert(collected == 17, "Unexpected number of collected bytes in strdup");
     gc_stop(&gc_);
     return NULL;
 }
