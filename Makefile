@@ -13,6 +13,9 @@ test:
 coverage: test
 	$(MAKE) -C test coverage
 
+coverage-html: coverage
+	$(MAKE) -C test coverage-html
+
 .PHONY: clean
 clean:
 	$(MAKE) -C test clean

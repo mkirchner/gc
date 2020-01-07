@@ -23,10 +23,11 @@ $(BUILD_DIR)/test/test_gc: $(OBJS)
 coverage: $(BUILD_DIR)/test/test_gc
 	lcov -b . -d ../build/test/ -c -o ../build/test/coverage-all.info
 	lcov -b . -r ../build/test/coverage-all.info "*test*" -o ../build/test/coverage.info
+
+coverage-html: coverage
 	mkdir -p ../build/test/coverage
 	genhtml -o ../build/test/coverage ../build/test/coverage.info
 	open ../build/test/coverage/index.html
-
 
 .PHONY: clean
 clean:
