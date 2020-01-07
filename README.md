@@ -60,12 +60,23 @@ Handbook][garbage_collection_handbook].
 
 ## Quickstart
 
-### Download and test
+### Download, compile and test
 
     $ git clone git@github.com:mkirchner/gc.git
     $ cd gc
+    
+To compile using the `clang` compiler:
+
     $ make test
-    $ make coverage  # to open the current coverage in a browser
+    
+To use the GNU Compiler Collection (GCC):
+
+    $ make test CC=gcc
+    
+The tests should complete successfully. To create the current coverage report:
+
+    $ make coverage
+
 
 ### Basic usage
 
@@ -213,7 +224,7 @@ than more optimized approaches.
 The core data structure inside `gc` is a hash map that maps the address of
 allocated memory to the garbage collection metadata of that memory:
 
-The items in the hash map are allocations, modeles with the `Allocation`
+The items in the hash map are allocations, modeled with the `Allocation`
 `struct`:
 
 ```c
