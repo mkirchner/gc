@@ -22,7 +22,7 @@ jobs:
       - name: Install lcov
         run: sudo apt-get install -y lcov
       - name: Build & test
-        run: make CC=clang
+        run: make CC=gcc
       - name: Collect coverage
         run: make coverage
       - name: Push to Coveralls
