@@ -15,6 +15,11 @@
 #define LOGLEVEL LOGLEVEL_INFO
 
 /*
+ * The size of a pointer.
+ */
+#define PTRSIZE sizeof(char*)
+
+/*
  * Allocations can temporarily be tagged as "marked" an part of the
  * mark-and-sweep implementation or can be tagged as "roots" which are
  * not automatically garbage collected. The latter allows the implementation
@@ -504,7 +509,7 @@ void gc_mark_alloc(GarbageCollector* gc, void* ptr)
         /* Iterate over allocation contents and mark them as well */
         LOG_DEBUG("Checking allocation (ptr=%p, size=%lu) contents", ptr, alloc->size);
         for (char* p = (char*) alloc->ptr;
-                p < (char*) alloc->ptr + alloc->size;
+                p <= (char*) alloc->ptr + alloc->size - PTRSIZE;
                 ++p) {
             LOG_DEBUG("Checking allocation (ptr=%p) @%lu with value %p",
                       ptr, p-((char*) alloc->ptr), *(void**)p);
@@ -518,8 +523,9 @@ void gc_mark_stack(GarbageCollector* gc)
     LOG_DEBUG("Marking the stack (gc@%p) in increments of %ld", (void*) gc, sizeof(char));
     void *tos = __builtin_frame_address(0);
     void *bos = gc->bos;
-    /* The stack grows towards smaller memory addresses, hence we scan tos->bos */
-    for (char* p = (char*) tos; p < (char*) bos; ++p) {
+    /* The stack grows towards smaller memory addresses, hence we scan tos->bos.
+     * Stop scanning once the distance between tos & bos is too small to hold a valid pointer */
+    for (char* p = (char*) tos; p <= (char*) bos - PTRSIZE; ++p) {
         gc_mark_alloc(gc, *(void**)p);
     }
 }
