@@ -49,7 +49,7 @@ void gc_mark_stack(GarbageCollector* gc)
     char dummy;
     void *tos = (void*) &dummy;
     void *bos = gc->bos;
-    for (char* p = (char*) tos; p < (char*) bos; ++p) {
+    for (char* p = (char*) tos; p <= (char*) bos - PTRSIZE; ++p) {
         gc_mark_alloc(gc, *(void**)p);
     }
 }
@@ -64,6 +64,8 @@ The code here is straightforward:
    if they contain references to known memory locations (`gc_mark_alloc()`
    queries the allocation map and recursively marks the allocations if the
    pointed-to memory allocations are a known key in the allocation map).
+   We do not iterate all the way to `bos` since the last `PTRSIZE-1` bytes
+   are too short to hold valid pointer addresses.
 
 That leaves two questions: why are we iterating using a `char*` and 
 what does `*(void**)p` do?
@@ -136,7 +138,7 @@ void gc_mark_alloc(GarbageCollector* gc, void* ptr)
     if (alloc && !(alloc->tag & GC_TAG_MARK)) {
         alloc->tag |= GC_TAG_MARK;
         for (char* p = (char*) alloc->ptr;
-                p < (char*) alloc->ptr + alloc->size;
+                p <= (char*) alloc->ptr + alloc->size - PTRSIZE;
                 ++p) {
             gc_mark_alloc(gc, *(void**)p);
         }

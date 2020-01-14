@@ -1,4 +1,5 @@
-![](https://github.com/mkirchner/gc/workflows/C/C++%20CI/badge.svg)
+![Build Status](https://github.com/mkirchner/gc/workflows/C/C++%20CI/badge.svg)
+[![Coverage Status](https://coveralls.io/repos/github/mkirchner/gc/badge.svg)](https://coveralls.io/github/mkirchner/gc)
 
 # gc: mark & sweep garbage collection for C
 
