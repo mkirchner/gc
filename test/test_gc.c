@@ -362,6 +362,49 @@ static void _create_allocs(GarbageCollector* gc,
     }
 }
 
+static char* test_gc_realloc()
+{
+    GarbageCollector gc_;
+    void *bos = __builtin_frame_address(0);
+    gc_start(&gc_, bos);
+
+    /* manually allocate some memory */
+    {
+        void *unmarked = malloc(sizeof(char));
+        void *re_unmarked = gc_realloc(&gc_, unmarked, sizeof(char) * 2);
+        mu_assert(!re_unmarked, "GC should not realloc pointers unknown to it");
+        free(unmarked);
+    }
+
+    /* reallocing NULL pointer */
+    {
+        void *unmarked = NULL;
+        void *re_marked = gc_realloc(&gc_, unmarked, sizeof(char) * 42);
+        mu_assert(re_marked, "GC should not realloc NULL pointers");
+        Allocation* a = gc_allocation_map_get(gc_.allocs, re_marked);
+        mu_assert(a->size == 42, "Wrong allocation size");
+    }
+
+    /* realloc a valid pointer with same size to enforce same pointer is used*/
+    {
+        int** ints = gc_calloc(&gc_, 16, sizeof(int*));
+        ints = gc_realloc(&gc_, ints, 16*sizeof(int*));
+        Allocation* a = gc_allocation_map_get(gc_.allocs, ints);
+        mu_assert(a->size == 16*sizeof(int*), "Wrong allocation size");
+    }
+
+    /* realloc with size greater than before */
+    {
+        int** ints = gc_calloc(&gc_, 16, sizeof(int*));
+        ints = gc_realloc(&gc_, ints, 42*sizeof(int*));
+        Allocation* a = gc_allocation_map_get(gc_.allocs, ints);
+        mu_assert(a->size == 42*sizeof(int*), "Wrong allocation size");
+    }
+
+    gc_stop(&gc_);
+    return NULL;
+}
+
 static char* test_gc_pause_resume()
 {
     GarbageCollector gc_;
@@ -380,6 +423,7 @@ static char* test_gc_pause_resume()
     gc_mark_stack(&gc_);
     size_t collected = gc_sweep(&gc_);
 
+    printf("collected: %d, N*8: %d\n", collected, N*8);
     mu_assert(collected == N*8, "Unexpected number of collected bytes in pause/resume");
     gc_stop(&gc_);
     return NULL;
@@ -424,6 +468,7 @@ static char* test_suite()
     mu_run_test(test_gc_allocation_map_cleanup);
     mu_run_test(test_gc_static_allocation);
     mu_run_test(test_primes);
+    // mu_run_test(test_gc_realloc);
     mu_run_test(test_gc_pause_resume);
     mu_run_test(test_gc_strdup);
     return 0;
