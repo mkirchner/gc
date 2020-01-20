@@ -353,15 +353,6 @@ static char* test_gc_static_allocation()
     return NULL;
 }
 
-static void _create_allocs(GarbageCollector* gc,
-                           size_t count,
-                           size_t size)
-{
-    for (size_t i=0; i<count; ++i) {
-        gc_malloc(gc, size);
-    }
-}
-
 static char* test_gc_realloc()
 {
     GarbageCollector gc_;
@@ -405,6 +396,15 @@ static char* test_gc_realloc()
     return NULL;
 }
 
+static void _create_allocs(GarbageCollector* gc,
+                           size_t count,
+                           size_t size)
+{
+    for (size_t i=0; i<count; ++i) {
+        gc_malloc(gc, size);
+    }
+}
+
 static char* test_gc_pause_resume()
 {
     GarbageCollector gc_;
@@ -423,7 +423,6 @@ static char* test_gc_pause_resume()
     gc_mark_stack(&gc_);
     size_t collected = gc_sweep(&gc_);
 
-    printf("collected: %d, N*8: %d\n", collected, N*8);
     mu_assert(collected == N*8, "Unexpected number of collected bytes in pause/resume");
     gc_stop(&gc_);
     return NULL;
@@ -468,7 +467,7 @@ static char* test_suite()
     mu_run_test(test_gc_allocation_map_cleanup);
     mu_run_test(test_gc_static_allocation);
     mu_run_test(test_primes);
-    // mu_run_test(test_gc_realloc);
+    mu_run_test(test_gc_realloc);
     mu_run_test(test_gc_pause_resume);
     mu_run_test(test_gc_strdup);
     return 0;
