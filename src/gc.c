@@ -340,14 +340,24 @@ static void* gc_mcalloc(size_t count, size_t size)
 }
 
 
+static bool gc_needs_sweep(GarbageCollector* gc)
+{
+    return gc->allocs->size > gc->allocs->sweep_limit;
+}
+
 static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*dtor)(void*))
 {
     /* Allocation logic that generalizes over malloc/calloc. */
 
-    /* Attempt to allocate memory */
+    /* Check if we reached the high-water mark and need to clean up */
+    if (gc_needs_sweep(gc) && !gc->paused) {
+        size_t freed_mem = gc_run(gc);
+        LOG_DEBUG("Garbage collection cleaned up %lu bytes.", freed_mem);
+    }
+    /* With cleanup out of the way, attempt to allocate memory */
     void* ptr = gc_mcalloc(count, size);
     size_t alloc_size = count ? count * size : size;
-    /* If allocation fails, attempt to free some memory and try again. */
+    /* If allocation fails, force an out-of-policy run to free some memory and try again. */
     if (!ptr && !gc->paused && (errno == EAGAIN || errno == ENOMEM)) {
         gc_run(gc);
         ptr = gc_mcalloc(count, size);
@@ -359,10 +369,6 @@ static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*
         /* Deal with metadata allocation failure */
         if (alloc) {
             LOG_DEBUG("Managing %zu bytes at %p", alloc_size, (void*) alloc->ptr);
-            if (gc->allocs->size > gc->allocs->sweep_limit && !gc->paused) {
-                size_t freed_mem = gc_run(gc);
-                LOG_DEBUG("Garbage collection cleaned up %lu bytes.", freed_mem);
-            }
             ptr = alloc->ptr;
         } else {
             /* We failed to allocate the metadata, give it another try or at least
