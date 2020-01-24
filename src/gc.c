@@ -339,10 +339,9 @@ static void* gc_mcalloc(size_t count, size_t size)
     return calloc(count, size);
 }
 
-
 static bool gc_needs_sweep(GarbageCollector* gc)
 {
-    return (gc->allocs->size > gc->allocs->sweep_limit);
+    return gc->allocs->size > gc->allocs->sweep_limit;
 }
 
 static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*dtor)(void*))
@@ -374,7 +373,6 @@ static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*
             /* We failed to allocate the metadata, fail cleanly. */
             free(ptr);
             ptr = NULL;
-            }
         }
     }
     return ptr;
