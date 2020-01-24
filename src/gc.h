@@ -44,6 +44,11 @@ void* gc_realloc(GarbageCollector* gc, void* ptr, size_t size);
 void gc_free(GarbageCollector* gc, void* ptr);
 
 /*
+ * Lifecycle management
+ */
+void* gc_make_static(GarbageCollector* gc, void* ptr);
+
+/*
  * Helper functions and stdlib replacements.
  */
 char* gc_strdup (GarbageCollector* gc, const char* s);

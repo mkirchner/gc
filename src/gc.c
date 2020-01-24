@@ -342,7 +342,7 @@ static void* gc_mcalloc(size_t count, size_t size)
 
 static bool gc_needs_sweep(GarbageCollector* gc)
 {
-    return gc->allocs->size > gc->allocs->sweep_limit;
+    return (gc->allocs->size > gc->allocs->sweep_limit);
 }
 
 static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*dtor)(void*))
@@ -371,17 +371,9 @@ static void* gc_allocate(GarbageCollector* gc, size_t count, size_t size, void(*
             LOG_DEBUG("Managing %zu bytes at %p", alloc_size, (void*) alloc->ptr);
             ptr = alloc->ptr;
         } else {
-            /* We failed to allocate the metadata, give it another try or at least
-             * attempt to fail cleanly. */
-            if (!gc->paused) {
-                gc_run(gc);
-            }
-            alloc = gc_allocation_map_put(gc->allocs, ptr, alloc_size, dtor);
-            if (alloc) {
-                ptr = alloc->ptr;
-            } else {
-                free(ptr);
-                ptr = NULL;
+            /* We failed to allocate the metadata, fail cleanly. */
+            free(ptr);
+            ptr = NULL;
             }
         }
     }
@@ -404,6 +396,12 @@ void* gc_malloc(GarbageCollector* gc, size_t size)
 void* gc_malloc_static(GarbageCollector* gc, size_t size, void(*dtor)(void*))
 {
     void* ptr = gc_malloc_ext(gc, size, dtor);
+    gc_make_root(gc, ptr);
+    return ptr;
+}
+
+void* gc_make_static(GarbageCollector* gc, void* ptr)
+{
     gc_make_root(gc, ptr);
     return ptr;
 }
