@@ -445,7 +445,7 @@ void* gc_realloc(GarbageCollector* gc, void* p, size_t size)
     } else {
         // successful reallocation w/ copy
         gc_allocation_map_remove(gc->allocs, p, true);
-        gc_allocation_map_put(gc->allocs, p, size, alloc->dtor);
+        gc_allocation_map_put(gc->allocs, q, size, alloc->dtor);
     }
     return q;
 }
