@@ -237,9 +237,12 @@ static char* test_gc_mark_stack()
     mu_assert(a->tag & GC_TAG_MARK, "Referenced alloc should be tagged");
     mu_assert(unmarked_alloc->tag == GC_TAG_NONE, "Unreferenced alloc should not be tagged");
 
-    gc_free(&gc_, unmarked_alloc->ptr);
-    gc_free(&gc_, five_ptr[0]);
-    gc_free(&gc_, five_ptr);
+    /* Clean up the tags manually, again */
+    a = gc_allocation_map_get(gc_.allocs, five_ptr[0]);
+    a->tag = GC_TAG_NONE;
+    a = gc_allocation_map_get(gc_.allocs, five_ptr);
+    a->tag = GC_TAG_NONE;
+
     gc_stop(&gc_);
     return NULL;
 }
@@ -353,6 +356,49 @@ static char* test_gc_static_allocation()
     return NULL;
 }
 
+static char* test_gc_realloc()
+{
+    GarbageCollector gc_;
+    void *bos = __builtin_frame_address(0);
+    gc_start(&gc_, bos);
+
+    /* manually allocate some memory */
+    {
+        void *unmarked = malloc(sizeof(char));
+        void *re_unmarked = gc_realloc(&gc_, unmarked, sizeof(char) * 2);
+        mu_assert(!re_unmarked, "GC should not realloc pointers unknown to it");
+        free(unmarked);
+    }
+
+    /* reallocing NULL pointer */
+    {
+        void *unmarked = NULL;
+        void *re_marked = gc_realloc(&gc_, unmarked, sizeof(char) * 42);
+        mu_assert(re_marked, "GC should not realloc NULL pointers");
+        Allocation* a = gc_allocation_map_get(gc_.allocs, re_marked);
+        mu_assert(a->size == 42, "Wrong allocation size");
+    }
+
+    /* realloc a valid pointer with same size to enforce same pointer is used*/
+    {
+        int** ints = gc_calloc(&gc_, 16, sizeof(int*));
+        ints = gc_realloc(&gc_, ints, 16*sizeof(int*));
+        Allocation* a = gc_allocation_map_get(gc_.allocs, ints);
+        mu_assert(a->size == 16*sizeof(int*), "Wrong allocation size");
+    }
+
+    /* realloc with size greater than before */
+    {
+        int** ints = gc_calloc(&gc_, 16, sizeof(int*));
+        ints = gc_realloc(&gc_, ints, 42*sizeof(int*));
+        Allocation* a = gc_allocation_map_get(gc_.allocs, ints);
+        mu_assert(a->size == 42*sizeof(int*), "Wrong allocation size");
+    }
+
+    gc_stop(&gc_);
+    return NULL;
+}
+
 static void _create_allocs(GarbageCollector* gc,
                            size_t count,
                            size_t size)
@@ -424,6 +470,7 @@ static char* test_suite()
     mu_run_test(test_gc_allocation_map_cleanup);
     mu_run_test(test_gc_static_allocation);
     mu_run_test(test_primes);
+    mu_run_test(test_gc_realloc);
     mu_run_test(test_gc_pause_resume);
     mu_run_test(test_gc_strdup);
     return 0;
