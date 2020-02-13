@@ -237,9 +237,12 @@ static char* test_gc_mark_stack()
     mu_assert(a->tag & GC_TAG_MARK, "Referenced alloc should be tagged");
     mu_assert(unmarked_alloc->tag == GC_TAG_NONE, "Unreferenced alloc should not be tagged");
 
-    gc_free(&gc_, unmarked_alloc->ptr);
-    gc_free(&gc_, five_ptr[0]);
-    gc_free(&gc_, five_ptr);
+    /* Clean up the tags manually, again */
+    a = gc_allocation_map_get(gc_.allocs, five_ptr[0]);
+    a->tag = GC_TAG_NONE;
+    a = gc_allocation_map_get(gc_.allocs, five_ptr);
+    a->tag = GC_TAG_NONE;
+
     gc_stop(&gc_);
     return NULL;
 }
