@@ -443,4 +443,4 @@ ready for the next run!
 [boehm]: https://www.hboehm.info/gc/ 
 [stutter]: https://github.com/mkirchner/stutter
 [tgc]: https://github.com/orangeduck/tgc
-[garbage_collection_handbook]: http://gchandbook.org
+[garbage_collection_handbook]: https://amzn.to/2VdEvjC
