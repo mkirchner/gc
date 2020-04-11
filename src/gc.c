@@ -29,7 +29,7 @@
 #define GC_TAG_ROOT 0x1
 #define GC_TAG_MARK 0x2
 
-/* 
+/*
  * Support for windows c compiler is added by adding this macro.
  * Tested on: Microsoft (R) C/C++ Optimizing Compiler Version 19.24.28314 for x86
  */
@@ -446,8 +446,9 @@ void* gc_realloc(GarbageCollector* gc, void* p, size_t size)
         alloc->size = size;
     } else {
         // successful reallocation w/ copy
+        void (*dtor)(void*) = alloc->dtor;
         gc_allocation_map_remove(gc->allocs, p, true);
-        gc_allocation_map_put(gc->allocs, q, size, alloc->dtor);
+        gc_allocation_map_put(gc->allocs, q, size, dtor);
     }
     return q;
 }
