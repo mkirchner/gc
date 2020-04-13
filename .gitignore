@@ -1,6 +1,21 @@
 # Prerequisites
 *.d
 
+.vscode/
+.idea/
+build/
+cmake-build-debug/
+cmake-build-release/
+Debug/
+Release/
+x64/
+.vs/
+*.opensdf
+*.sdf
+*.suo
+ipch/
+*.vcxproj.user
+
 # Object files
 *.o
 *.ko
