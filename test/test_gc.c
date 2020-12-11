@@ -123,7 +123,7 @@ static char* test_gc_allocation_map_put_get_remove()
 
     /* Enforce separate chaining by disallowing up/downsizing.
      * The pigeonhole principle then states that we need to have at least one
-     * entry in the hash map that has a separare chain with len > 1
+     * entry in the hash map that has a separate chain with len > 1
      */
     AllocationMap* am = gc_allocation_map_new(32, 32, DBL_MAX, 0.0, DBL_MAX);
     Allocation* a;
