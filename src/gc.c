@@ -495,7 +495,7 @@ void gc_start_ext (GarbageCollector *gc,
     gc->bos = bos;
     initial_capacity = initial_capacity < min_capacity ? min_capacity : initial_capacity;
     gc->allocs = gc_allocation_map_new (min_capacity, initial_capacity,
-                                       sweep_factor, downsize_limit, upsize_limit);
+        sweep_factor, downsize_limit, upsize_limit);
     LOG_DEBUG ("Created new garbage collector (cap=%ld, siz=%ld).", gc->allocs->capacity, 
         gc->allocs->size);
 }
@@ -541,14 +541,14 @@ void gc_mark_stack (GarbageCollector *gc)
     
 }
 
-void gc_mark_roots (GarbageCollector* gc)
+void gc_mark_roots (GarbageCollector *gc)
 {
     LOG_DEBUG ("Marking roots%s", "");
     for (size_t i = 0; i < gc->allocs->capacity; ++i) {
         Allocation *chunk = gc->allocs->allocs[i];
         while (chunk) {
             if (chunk->tag & GC_TAG_ROOT) {
-                LOG_DEBUG ("Marking root @ %p", chunk->ptr);
+                LOG_DEBUG ("Marking root @%p", chunk->ptr);
                 gc_mark_alloc (gc, chunk->ptr);
             }
             chunk = chunk->next;
