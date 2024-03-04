@@ -263,37 +263,25 @@ static Allocation* gc_allocation_map_put(AllocationMap* am,
     size_t index = gc_hash(ptr) % am->capacity;
     LOG_DEBUG("PUT request for allocation ix=%ld", index);
     Allocation* alloc = gc_allocation_new(ptr, size, dtor);
-    Allocation* cur = am->allocs[index];
-    Allocation* prev = NULL;
-    /* Upsert if ptr is already known (e.g. dtor update). */
-    while(cur != NULL) {
-        if (cur->ptr == ptr) {
-            // found it
-            alloc->next = cur->next;
-            if (!prev) {
-                // position 0
-                am->allocs[index] = alloc;
-            } else {
-                // in the list
-                prev->next = alloc;
-            }
-            gc_allocation_delete(cur);
-            LOG_DEBUG("AllocationMap Upsert at ix=%ld", index);
-            return alloc;
+    Allocation** indirect = &am->allocs[index];
 
-        }
-        prev = cur;
-        cur = cur->next;
+    while (*indirect != NULL && (*indirect)->ptr != ptr) {
+        indirect = &(*indirect)->next;
     }
-    /* Insert at the front of the separate chaining list */
-    cur = am->allocs[index];
-    alloc->next = cur;
-    am->allocs[index] = alloc;
-    am->size++;
-    LOG_DEBUG("AllocationMap insert at ix=%ld", index);
-    void* p = alloc->ptr;
+
+     if (*indirect) { // found existing allocation
+        alloc->next = (*indirect)->next;
+        gc_allocation_delete(*indirect);
+        LOG_DEBUG("AllocationMap Upsert at ix=%ld", index);
+    } else {
+        am->size++;
+        LOG_DEBUG("AllocationMap insert at ix=%ld", index);
+    }
+
+    *indirect= alloc;
+
     if (gc_allocation_map_resize_to_fit(am)) {
-        alloc = gc_allocation_map_get(am, p);
+        alloc = gc_allocation_map_get(am, alloc->ptr);
     }
     return alloc;
 }
@@ -305,28 +293,20 @@ static void gc_allocation_map_remove(AllocationMap* am,
 {
     // ignores unknown keys
     size_t index = gc_hash(ptr) % am->capacity;
-    Allocation* cur = am->allocs[index];
-    Allocation* prev = NULL;
-    Allocation* next;
-    while(cur != NULL) {
-        next = cur->next;
-        if (cur->ptr == ptr) {
-            // found it
-            if (!prev) {
-                // first item in list
-                am->allocs[index] = cur->next;
-            } else {
-                // not the first item in the list
-                prev->next = cur->next;
-            }
-            gc_allocation_delete(cur);
-            am->size--;
-        } else {
-            // move on
-            prev = cur;
-        }
-        cur = next;
+    Allocation** indirect = &am->allocs[index];
+    Allocation* tmp = NULL;
+
+    while (*indirect != NULL && (*indirect)->ptr != ptr) {
+        indirect = &(*indirect)->next;
     }
+
+    if (*indirect) {
+        tmp = *indirect;
+        *indirect = (*indirect)->next;
+        gc_allocation_delete(tmp);
+        am->size--;
+    }
+
     if (allow_resize) {
         gc_allocation_map_resize_to_fit(am);
     }
