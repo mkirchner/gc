@@ -34,6 +34,7 @@
  * Tested on: Microsoft (R) C/C++ Optimizing Compiler Version 19.24.28314 for x86
  */
 #if defined(_MSC_VER)
+#include <intrin.h>
 #define __builtin_frame_address(x)  ((void)(x), _AddressOfReturnAddress())
 #endif
 

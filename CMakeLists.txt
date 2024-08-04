@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.0)
+project(gc C)
+include_directories(src test)
+add_library(gc src/gc.c src/log.c)
+add_executable(test_gc test/test_gc.c)
+target_link_libraries(test_gc gc)
+enable_testing()
+add_test(NAME test_gc COMMAND test_gc)
